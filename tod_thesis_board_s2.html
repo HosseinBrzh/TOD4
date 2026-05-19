@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Section 2 — From Theory to Practice</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; background: #1a1a1a; }
+
+/* ── Background ─────────────────────────────────────────── */
+#bg {
+  position: fixed; inset: 0;
+  background-image: url('https://i.postimg.cc/PJG46qq5/gokhan-topel-VA-Pg-TTZr8I-unsplash.jpg');
+  background-size: cover; background-position: center;
+  z-index: 0;
+}
+
+/* ── Blue-white blur overlay (visible from step 1+) ─────── */
+#bg-overlay {
+  position: fixed; inset: 0;
+  background: rgba(220, 232, 248, 0.45);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.90s ease;
+  pointer-events: none;
+}
+#bg-overlay.active { opacity: 1; }
+
+/* ── Stage ───────────────────────────────────────────────── */
+#stage-outer {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10; overflow: hidden;
+}
+#stage { width: 1000px; height: 640px; position: relative; transform-origin: center center; }
+
+/* ── SVG thread layer ────────────────────────────────────── */
+#threads-svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  pointer-events: none; overflow: visible; z-index: 1;
+}
+
+/* ── Controls ────────────────────────────────────────────── */
+#controls {
+  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 0.5px solid rgba(255,255,255,0.30);
+  border-radius: 40px; padding: 8px 20px; z-index: 100;
+}
+.ctrl-btn {
+  font-family: 'DM Sans', sans-serif; font-size: 12px;
+  padding: 5px 18px;
+  border: 0.5px solid rgba(0,0,0,0.25); border-radius: 20px;
+  background: rgba(255,255,255,0.80); color: #1a1a1a;
+  cursor: pointer; transition: background 0.2s; white-space: nowrap;
+}
+.ctrl-btn:hover { background: rgba(255,255,255,0.95); }
+.ctrl-btn:disabled { opacity: 0.35; cursor: default; }
+#step-info { font-size: 11.5px; color: #1a1a1a; min-width: 80px; text-align: center; font-weight: 500; }
+
+/* ── Base card ───────────────────────────────────────────── */
+.card {
+  position: absolute;
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  transition:
+    left   0.90s cubic-bezier(0.65,0,0.35,1),
+    top    0.90s cubic-bezier(0.65,0,0.35,1),
+    width  0.90s cubic-bezier(0.65,0,0.35,1),
+    height 0.90s cubic-bezier(0.65,0,0.35,1),
+    opacity 0.80s ease,
+    transform 0.90s cubic-bezier(0.65,0,0.35,1);
+}
+
+/* ── Title / Section-header card ─────────────────────────── */
+/*
+  Big centred state:
+  Canvas 1000 × 640 → left = (1000−648)/2 = 176, top = (640−312)/2 = 164
+*/
+#card-title {
+  width: 648px; height: 312px;
+  left: 176px; top: 164px;
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 40px 52px;
+  overflow: hidden;
+  gap: 16px;
+  opacity: 0; transform: scale(0.92);
+  z-index: 3;
+}
+
+/* Fade-in + scale-up trigger */
+#card-title.state-center { opacity: 1; transform: scale(1); }
+
+/* ── Title card inner elements (big state) ── */
+#card-title .tc-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: #C4922A;
+  flex-shrink: 0; white-space: nowrap;
+  transition:
+    font-size   0.90s cubic-bezier(0.65,0,0.35,1),
+    letter-spacing 0.90s cubic-bezier(0.65,0,0.35,1),
+    padding-right  0.90s cubic-bezier(0.65,0,0.35,1),
+    border-right   0.90s;
+}
+#card-title .tc-rule {
+  width: 44px; height: 1.5px;
+  background: rgba(196,146,42,0.40);
+  border-radius: 1px; flex-shrink: 0;
+  transition:
+    width   0.90s cubic-bezier(0.65,0,0.35,1),
+    height  0.90s cubic-bezier(0.65,0,0.35,1),
+    opacity 0.45s ease;
+}
+#card-title .tc-main {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  font-size: 36px; color: #111; line-height: 1.25;
+  transition:
+    font-size    0.90s cubic-bezier(0.65,0,0.35,1),
+    font-style   0.90s,
+    padding-left 0.90s cubic-bezier(0.65,0,0.35,1);
+}
+
+/* ── Title card — header-strip state ────────────────────────
+   Height, left, top, width are set as inline styles in JS
+   (same technique as the original file's card-t1 header)
+   The class only switches the layout internals.
+   ─────────────────────────────────────────────────────────── */
+#card-title.state-header {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  padding: 0 28px 0 20px;
+  gap: 0;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1; transform: scale(1);
+}
+#card-title.state-header .tc-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  padding-right: 18px;
+  border-right: 1.5px solid #bbb;
+}
+#card-title.state-header .tc-rule {
+  width: 0; height: 0; opacity: 0;
+}
+#card-title.state-header .tc-main {
+  font-size: 22px;
+  font-style: normal;
+  padding-left: 18px;
+}
+
+/* ── "Understanding the Context" card (appears in step 0 after header settles) ── */
+#card-context {
+  width: 648px; height: 312px;
+  left: 176px; top: 164px;
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 3;
+}
+#card-context.visible { opacity: 1; transform: scale(1) translateY(0); }
+#card-context .ctx-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 34px; color: #111; line-height: 1.3;
+  text-align: center;
+  transition: font-size 0.90s cubic-bezier(0.65,0,0.35,1);
+}
+
+/* ── Step 1: context card shrinks to hub ─────────────────── */
+/*
+  Canvas centre: 500, 320
+  Shrunk: 200 × 90  →  left = (1000−200)/2 = 400,  top = (640−90)/2 = 275
+*/
+#card-context.state-small {
+  width: 200px; height: 90px;
+  left: 400px; top: 275px;
+  border: 3px solid #C4922A;
+  border-radius: 14px;
+}
+#card-context.state-small .ctx-title { font-size: 15px; }
+
+/* ── Surrounding context cards (step 1) ──────────────────── */
+/*
+  All five cards: 170 × 100 px, positioned around the hub (500,320)
+  Layout (card top-left corner):
+    top          : left=415, top=95   → card centre (500, 145)
+    upper-left   : left=77,  top=200  → card centre (162, 250)
+    upper-right  : left=753, top=200  → card centre (838, 250)
+    lower-left   : left=77,  top=430  → card centre (162, 480)
+    lower-right  : left=753, top=430  → card centre (838, 480)
+*/
+.ctx-card {
+  width: 170px; height: 100px;
+  background: rgba(255,255,255,0.48);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 0.5px solid rgba(255,255,255,0.55);
+  padding: 14px 14px;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 2; pointer-events: none;
+}
+.ctx-card.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+.ctx-card .ctx-card-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13.5px; color: #111; line-height: 1.45;
+  text-align: center;
+}
+
+/* Individual positions + accent colours */
+#ctx-1 { left: 415px; top:  95px; border-left: 4px solid #2A9D8F; } /* top        — teal  */
+#ctx-2 { left:  77px; top: 200px; border-left: 4px solid #3A7DC9; } /* upper-left — blue  */
+#ctx-3 { left: 753px; top: 200px; border-left: 4px solid #C4922A; } /* upper-right— amber */
+#ctx-4 { left:  77px; top: 430px; border-left: 4px solid #3A9B5C; } /* lower-left — green */
+#ctx-5 { left: 753px; top: 430px; border-left: 4px solid #C0392B; } /* lower-right— red   */
+
+/* ── TOD Typology Methodology card (step 2 big → small card top-left) ── */
+/*
+  Big state  : 648 × 312, centred — left:176, top:164
+  Small state: same size as flow cards (195 × 110) → top-left: left:130, top:95
+               The card stays a normal glass card, it just shrinks and repositions.
+
+  Flowchart layout (2 columns, 3 rows, canvas 1000 × 640):
+    Left  col x : 130   right edge : 325   centre-x : 228
+    Right col x : 675   right edge : 870   centre-x : 773
+    Row 1 top   :  95   bottom     : 205   centre-y : 150
+    Row 2 top   : 280   bottom     : 390   centre-y : 335
+    Row 3 top   : 450   bottom     : 560   centre-y : 505
+
+  Threads (edge-to-edge, all visible between cards):
+    tod-sim  : (325,150)→(675,150)   horizontal →  350 px
+    sim-clu  : (773,205)→(773,280)   vertical   ↓   75 px
+    clu-pol  : (675,335)→(325,335)   horizontal ←  350 px
+    pol-actV : (228,390)→(228,505)   vertical   ↓  115 px
+    pol-actH : (228,505)→(675,505)   horizontal →  447 px
+*/
+#card-tod-method {
+  width: 648px; height: 312px;
+  left: 176px; top: 164px;
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 40px 52px; overflow: hidden; gap: 16px;
+  opacity: 0; transform: scale(0.92); z-index: 3;
+}
+#card-tod-method.state-center { opacity: 1; transform: scale(1); }
+
+#card-tod-method .tm-label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: #C4922A; flex-shrink: 0; white-space: nowrap;
+  transition: opacity 0.45s ease;
+}
+#card-tod-method .tm-rule {
+  width: 44px; height: 1.5px;
+  background: rgba(196,146,42,0.40);
+  border-radius: 1px; flex-shrink: 0;
+  transition: width 0.90s cubic-bezier(0.65,0,0.35,1),
+              height 0.90s, opacity 0.45s ease;
+}
+#card-tod-method .tm-main {
+  font-family: 'DM Serif Display', serif;
+  font-style: italic;
+  font-size: 36px; color: #111; line-height: 1.25;
+  transition: font-size 0.90s cubic-bezier(0.65,0,0.35,1), font-style 0.90s;
+}
+
+/* Subtitle line — always in flow, invisible until step 4 */
+#card-tod-method .tm-sub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10.5px; font-style: italic;
+  color: #111;
+  text-align: center; line-height: 1.4;
+  opacity: 0;
+  transition: opacity 0.45s ease;
+}
+#card-tod-method.tod-discrepancy .tm-sub { opacity: 1; }
+
+/* Flipped cards are clickable */
+.np-card.visible.flipped { cursor: pointer; }
+.np-card.visible.flipped:hover { background: rgba(255,255,255,0.68); }
+
+/* Card grows to fit the extra line in step 4 */
+#card-tod-method.state-small.tod-discrepancy { height: 130px; }
+
+/* Small state — normal card at top-left, same size as the flow cards */
+#card-tod-method.state-small {
+  width: 195px; height: 110px;
+  left: 130px; top: 95px;
+  padding: 14px 16px; gap: 0;
+  opacity: 1; transform: scale(1);
+}
+#card-tod-method.state-small .tm-label { opacity: 0; height: 0; overflow: hidden; }
+#card-tod-method.state-small .tm-rule  { width: 0; height: 0; opacity: 0; }
+#card-tod-method.state-small .tm-main  { font-size: 16px; font-style: normal; }
+
+/* ── Flow cards (step 2) ─────────────────────────────────── */
+.pipe-card {
+  width: 195px; height: 110px;
+  background: rgba(255,255,255,0.48);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 0.5px solid rgba(255,255,255,0.55);
+  padding: 14px 16px;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 2; pointer-events: none;
+}
+.pipe-card.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+.pipe-card .pipe-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 16px; color: #111; line-height: 1.45;
+  text-align: center;
+}
+
+/* Positions + accent colours — flowchart layout */
+#pipe-1 { left: 675px; top:  95px; border-left: 4px solid #3A7DC9; } /* Simplify       top-right  */
+#pipe-2 { left: 675px; top: 280px; border-left: 4px solid #C4922A; } /* Clusters       mid-right  */
+#pipe-3 { left: 130px; top: 280px; border-left: 4px solid #3A9B5C; } /* Targeted       mid-left   */
+#pipe-4 { left: 675px; top: 450px; border-left: 4px solid #C0392B; } /* Action Plan    bot-right  */
+#pipe-5 { display: none; }                                             /* unused         */
+
+/* ── Step 3: NP model cards (tree from TOD) ─────────────── */
+/*
+  5 cards, 170 × 100, evenly spread across 1000 px canvas:
+  gap = (1000 − 5×170) / 6 = 25 px
+  Positions: left = 25, 220, 415, 610, 805
+  top = 420   → card centre-y = 470
+  Thread endpoints (top-centre of each card, y=420):
+    np-1 centre-x=110  np-2=305  np-3=500  np-4=695  np-5=890
+  All threads start at TOD bottom-centre (500,200):
+    TOD state-small top-centre: left=403, top=90, h=110 → bottom=200
+*/
+.np-card {
+  width: 170px; height: 100px;
+  background: rgba(255,255,255,0.48);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 0.5px solid rgba(255,255,255,0.55);
+  padding: 14px 14px;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 2; pointer-events: none;
+  perspective: 900px;
+}
+.np-card.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+
+/* ── Card-flip inner wrapper ─────────────────────────────── */
+.np-card-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.65s cubic-bezier(0.65,0,0.35,1);
+}
+.np-card.flipped .np-card-inner { transform: rotateY(180deg); }
+
+.np-card-front, .np-card-back {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+}
+.np-card-back { transform: rotateY(180deg); }
+
+.np-card .np-card-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 13.5px; color: #111; line-height: 1.45;
+  text-align: center;
+}
+
+#np-1 { left:  25px; top: 420px; border-left: 4px solid #2A9D8F; }
+#np-2 { left: 220px; top: 420px; border-left: 4px solid #3A7DC9; }
+#np-3 { left: 415px; top: 420px; border-left: 4px solid #C4922A; }
+#np-4 { left: 610px; top: 420px; border-left: 4px solid #3A9B5C; }
+#np-5 { left: 805px; top: 420px; border-left: 4px solid #C0392B; }
+
+/* ── Step 5: comparison table card ──────────────────────── */
+/*
+  700 × 370, centred on canvas (150,135)
+*/
+#card-table {
+  width: 700px; height: 415px;
+  left: 150px; top: 113px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 28px 36px;
+  align-items: flex-start; justify-content: flex-start; text-align: left;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+}
+#card-table.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+
+/* Table styles */
+.ctbl { width: 100%; border-collapse: collapse; font-family: 'DM Sans', sans-serif; }
+.ctbl thead th {
+  font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.12em;
+  color: #C4922A; text-align: left;
+  padding-bottom: 11px;
+  border-bottom: 1.5px solid rgba(196,146,42,0.30);
+}
+.ctbl thead th:first-child { width: 185px; }
+.ctbl tbody tr { border-bottom: 0.5px solid rgba(0,0,0,0.07); }
+.ctbl tbody tr:last-child { border-bottom: none; }
+.ctbl tbody td {
+  padding: 9px 0; font-size: 13.5px;
+  color: #111; vertical-align: middle; line-height: 1.35;
+}
+.ctbl tbody td:first-child {
+  font-size: 12px; font-weight: 600;
+  color: #555; letter-spacing: 0.03em;
+  padding-right: 20px; white-space: nowrap;
+}
+
+/* ── Step 6: indicators table (scrollable, 27 rows) ─────── */
+#card-indicators {
+  width: 910px; height: 482px;
+  left: 45px; top: 79px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 22px 26px 16px 26px;
+  align-items: flex-start; justify-content: flex-start; text-align: left;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+}
+#card-indicators.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+
+/* Scrollable wrapper */
+.ctbl2-wrap {
+  width: 100%; height: 100%;
+  overflow-y: auto;
+}
+.ctbl2-wrap::-webkit-scrollbar { width: 5px; }
+.ctbl2-wrap::-webkit-scrollbar-track { background: transparent; }
+.ctbl2-wrap::-webkit-scrollbar-thumb {
+  background: rgba(196,146,42,0.45); border-radius: 3px;
+}
+
+/* Table */
+.ctbl2 { width: 100%; border-collapse: collapse; font-family: 'DM Sans', sans-serif; table-layout: fixed; }
+
+/* Sticky header */
+.ctbl2 thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: transparent;
+  font-size: 11.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.13em;
+  color: #C4922A; text-align: left;
+  padding: 0 8px 10px 0;
+  border-bottom: 1.5px solid rgba(196,146,42,0.35);
+}
+
+/* Column widths */
+.ctbl2 col.c-no   { width: 36px; }
+.ctbl2 col.c-abbr { width: 56px; }
+.ctbl2 col.c-name { width: 216px; }
+.ctbl2 col.c-desc { width: auto; }
+
+.ctbl2 tbody tr { border-bottom: 0.5px solid rgba(0,0,0,0.06); }
+.ctbl2 tbody tr:last-child { border-bottom: none; }
+.ctbl2 tbody td {
+  padding: 7px 10px 7px 0;
+  font-size: 13px; color: #111;
+  vertical-align: top; line-height: 1.45;
+}
+.ctbl2 tbody td.td-no   { font-size: 12px; color: #aaa; font-weight: 500; }
+.ctbl2 tbody td.td-abbr { font-size: 12.5px; font-weight: 700; color: #C4922A; }
+.ctbl2 tbody td.td-name { font-weight: 500; }
+.ctbl2 tbody td.td-desc { font-size: 12.5px; color: #444; }
+
+/* ── Step 9: factor loadings table ──────────────────────── */
+#card-factors {
+  width: 790px; height: 480px;
+  left: 105px; top: 80px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 22px 26px 16px 26px;
+  align-items: flex-start; justify-content: flex-start; text-align: left;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+}
+#card-factors.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+#iter-badge {
+  position: absolute; top: 56px; left: 800px;
+  background: #C4922A; color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 4px 12px; border-radius: 20px;
+  opacity: 0; pointer-events: none; user-select: none;
+  transition: opacity 0.5s ease;
+  z-index: 9;
+}
+#iter-badge.visible { opacity: 1; }
+/* ── Step 10: iteration 2 table ────────────────────────── */
+#card-factors2 {
+  width: 790px; height: 480px;
+  left: 105px; top: 80px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 22px 26px 16px 26px;
+  align-items: flex-start; justify-content: flex-start; text-align: left;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+}
+#card-factors2.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+#card-factors2 .ctbl2 thead th:nth-child(n+2) { text-align: center; }
+#card-factors2 .row-red.struck td { text-decoration: line-through black; }
+#iter-badge2 {
+  position: absolute; top: 56px; left: 800px;
+  background: #C4922A; color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 4px 12px; border-radius: 20px;
+  opacity: 0; pointer-events: none; user-select: none;
+  transition: opacity 0.5s ease;
+  z-index: 9;
+}
+#iter-badge2.visible { opacity: 1; }
+/* ── Step 11: iteration 3 table ────────────────────────── */
+#card-factors3 {
+  width: 790px; height: 480px;
+  left: 105px; top: 80px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 22px 26px 16px 26px;
+  align-items: flex-start; justify-content: flex-start; text-align: left;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+}
+#card-factors3.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+#card-factors3 .ctbl2 thead th:nth-child(n+2) { text-align: center; }
+#card-factors3 .row-red.struck td { text-decoration: line-through black; }
+#iter-badge3 {
+  position: absolute; top: 56px; left: 800px;
+  background: #C4922A; color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 4px 12px; border-radius: 20px;
+  opacity: 0; pointer-events: none; user-select: none;
+  transition: opacity 0.5s ease;
+  z-index: 9;
+}
+#iter-badge3.visible { opacity: 1; }
+/* ── Step 12: iteration 4 table ────────────────────────── */
+#card-factors4 {
+  width: 790px; height: 480px;
+  left: 105px; top: 80px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 22px 26px 16px 26px;
+  align-items: flex-start; justify-content: flex-start; text-align: left;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+}
+#card-factors4.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+#card-factors4 .ctbl2 thead th:nth-child(n+2) { text-align: center; }
+#iter-badge4 {
+  position: absolute; top: 56px; left: 800px;
+  background: #C4922A; color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 4px 12px; border-radius: 20px;
+  opacity: 0; pointer-events: none; user-select: none;
+  transition: opacity 0.5s ease;
+  z-index: 9;
+}
+#iter-badge4.visible { opacity: 1; }
+
+/* ── Step 13: grouped factor structure card ── */
+#card-factors5 {
+  width: 790px; height: 480px;
+  left: 105px; top: 80px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 22px 26px 16px 26px;
+  align-items: flex-start; justify-content: flex-start; text-align: left;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34,1.56,0.64,1);
+}
+#card-factors5.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+#card-factors5 .ctbl2 thead th { text-align: center; }
+#card-factors5 .ctbl2 tbody td.td-dim {
+  font-size: 13px; font-weight: 700; color: #333;
+  vertical-align: middle; text-align: center; line-height: 1.5;
+  padding: 7px 10px;
+}
+#card-factors5 .ctbl2 tbody tr.row-group-start td { border-top: 1.5px solid rgba(196,146,42,0.28); }
+/* ── Step 14: zoom-and-pan dendrogram card ── */
+#card-dendro {
+  width: 880px; height: 500px;
+  left: 60px; top: 68px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 0; overflow: hidden;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34,1.56,0.64,1);
+}
+#card-dendro.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+#card-dendro { cursor: pointer; }
+#card-dendro img { width: 100%; height: 100%; object-fit: contain; display: block; }
+#card-dendro .dendro-hint {
+  position: absolute; bottom: 8px; left: 0; right: 0;
+  text-align: center;
+  font-family: 'DM Sans', sans-serif; font-size: 10px;
+  color: rgba(100,100,100,0.55);
+  pointer-events: none; user-select: none;
+}
+
+/* ── Dendrogram fullview — OUTSIDE #stage so position:fixed works ── */
+#dendro-fullview {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.92);
+}
+#dendro-fullview.open { display: block; }
+#dendro-fv-wrap {
+  position: absolute; inset: 0;
+  overflow: hidden; cursor: grab;
+}
+#dendro-fv-wrap.dragging { cursor: grabbing; }
+#dendro-fv-wrap img {
+  position: absolute; top: 0; left: 0;
+  display: block;
+  user-select: none; -webkit-user-drag: none; pointer-events: none;
+}
+#dendro-fv-close {
+  position: fixed; top: 14px; right: 18px;
+  background: rgba(255,255,255,0.12); color: #fff;
+  border: 1px solid rgba(255,255,255,0.25); border-radius: 6px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 6px 18px; cursor: pointer; z-index: 10000;
+  transition: background 0.2s;
+}
+#dendro-fv-close:hover { background: rgba(255,255,255,0.25); }
+#dendro-fv-hint {
+  position: fixed; bottom: 12px; left: 0; right: 0; text-align: center;
+  font-family: 'DM Sans', sans-serif; font-size: 11px;
+  color: rgba(255,255,255,0.40);
+  pointer-events: none; user-select: none; z-index: 10000;
+}
+
+#result-badge {
+  position: absolute; top: 56px; left: 800px;
+  background: #C4922A; color: #fff;
+  font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+  padding: 4px 12px; border-radius: 20px;
+  opacity: 0; pointer-events: none; user-select: none;
+  transition: opacity 0.5s ease;
+  z-index: 9;
+}
+#result-badge.visible { opacity: 1; }
+
+/* Coloured loading values */
+.val-green { color: #00B050; font-weight: 700; }
+.val-red   { color: #E03030; font-weight: 700; }
+
+/* Centred numeric cells */
+.td-val { text-align: center; font-variant-numeric: tabular-nums; font-size: 11.5px; }
+#card-factors .ctbl2 thead th:nth-child(n+3) { text-align: center; }
+
+/* Struck-through rows */
+#card-factors .row-red.struck td {
+  text-decoration: line-through black;
+}
+#card-indicators .row-strike.struck td {
+  text-decoration: line-through black;
+}
+
+/* ── Step 7: big image card ──────────────────────────────── */
+/*
+  860 × 480, centred with clearance below the header strip (top:80)
+  left = (1000−860)/2 = 70   bottom = 80+480 = 560
+*/
+#card-figjam, #card-screeplot {
+  width: 860px; height: 480px;
+  left: 70px; top: 80px;
+  background: rgba(255,255,255,0.52);
+  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  border: 0.5px solid rgba(255,255,255,0.60);
+  border-left: 5px solid #C4922A;
+  padding: 0; overflow: hidden;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 8; pointer-events: none;
+}
+#card-figjam.visible, #card-screeplot.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+#card-figjam img, #card-screeplot img {
+  width: 100%; height: 100%;
+  object-fit: contain; display: block;
+}
+
+/* ── Shared secondary card style (for future steps) ─────── */
+.card-sec {
+  width: 240px; height: 160px;
+  background: rgba(255,255,255,0.48);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 0.5px solid rgba(255,255,255,0.55);
+  padding: 18px 20px;
+  opacity: 0; transform: scale(0.88) translateY(10px);
+  z-index: 2; pointer-events: none;
+}
+.card-sec.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+.card-label {
+  font-size: 12px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.10em;
+  color: #555; margin-bottom: 9px;
+}
+.card-title-text {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px; font-weight: 400;
+  color: #111; line-height: 1.35;
+}
+.card-sub { font-size: 13px; color: #444; margin-top: 7px; line-height: 1.4; }
+
+/* Accent colours */
+.accent-blue  { border-left: 4px solid #3A7DC9; }
+.accent-green { border-left: 4px solid #3A9B5C; }
+.accent-amber { border-left: 4px solid #C4922A; }
+.accent-teal  { border-left: 4px solid #2A9D8F; }
+.accent-red   { border-left: 4px solid #C0392B; }
+
+/* ── Image overlay (step 3 card click) ──────────────────── */
+#img-overlay {
+  position: absolute; inset: 0;
+  background: rgba(10,18,38,0.68);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  z-index: 50;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 14px;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.38s ease;
+}
+#img-overlay.active { opacity: 1; pointer-events: auto; }
+
+#overlay-img {
+  display: block;
+  /* 1406×727 image — scale to fit 960 wide inside 1000×640 canvas */
+  width: 960px; height: auto; max-height: 540px;
+  border-radius: 8px;
+  box-shadow: 0 14px 64px rgba(0,0,0,0.55);
+  object-fit: contain;
+}
+#overlay-close {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px; font-weight: 500;
+  padding: 6px 26px;
+  border: 0.5px solid rgba(255,255,255,0.35);
+  border-radius: 20px;
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  color: #fff; cursor: pointer;
+  transition: background 0.20s;
+}
+#overlay-close:hover { background: rgba(255,255,255,0.30); }
+
+/* clickable card hint */
+.np-card.visible.np-clickable { cursor: pointer; }
+.np-card.visible.np-clickable:hover { background: rgba(255,255,255,0.64); }
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+#tooltip {
+  position: fixed;
+  background: rgba(255,255,255,0.97);
+  border-radius: 8px; padding: 14px 18px;
+  font-size: 13px; line-height: 1.65; max-width: 300px;
+  color: #1a1a1a; z-index: 300; display: none; pointer-events: none;
+  box-shadow: 0 4px 28px rgba(0,0,0,0.14);
+}
+#tooltip strong { font-weight: 500; font-size: 13.5px; display: block; margin-bottom: 6px; color: #111; }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="bg-overlay"></div>
+
+<div id="stage-outer">
+  <div id="stage">
+    <svg id="threads-svg"></svg>
+
+    <!-- ── Section 2 title / header card ── -->
+    <div class="card" id="card-title">
+      <div class="tc-label">Section 2</div>
+      <div class="tc-rule"></div>
+      <div class="tc-main">From Theory to Practice</div>
+    </div>
+
+    <!-- ── "Understanding the Context" card (step 0, appears after header settles) ── -->
+    <div class="card" id="card-context">
+      <div class="ctx-title">Understanding the Context</div>
+    </div>
+
+    <!-- ── Step 1: surrounding context cards ── -->
+    <div class="card ctx-card" id="ctx-1">
+      <div class="ctx-card-title">Geographical and Topographical Context</div>
+    </div>
+    <div class="card ctx-card" id="ctx-2">
+      <div class="ctx-card-title">Regional Planning Context</div>
+    </div>
+    <div class="card ctx-card" id="ctx-3">
+      <div class="ctx-card-title">Urban Development Scale</div>
+    </div>
+    <div class="card ctx-card" id="ctx-4">
+      <div class="ctx-card-title">Transportation and Infrastructure Context</div>
+    </div>
+    <div class="card ctx-card" id="ctx-5">
+      <div class="ctx-card-title">Socio-demographic and Cultural Context</div>
+    </div>
+
+    <!-- ── Step 2: TOD Typology Methodology header card ── -->
+    <div class="card" id="card-tod-method">
+      <div class="tm-label">Methodology</div>
+      <div class="tm-rule"></div>
+      <div class="tm-main">TOD Typology Methodology</div>
+      <div class="tm-sub">(Discrepancy In Literature)</div>
+    </div>
+
+    <!-- ── Step 2: flow cards (appear sequentially after TOD card shrinks) ── -->
+    <div class="card pipe-card" id="pipe-1">
+      <div class="pipe-title">Simplify and Model the Reality</div>
+    </div>
+    <div class="card pipe-card" id="pipe-2">
+      <div class="pipe-title">Creating Clusters and Typologies</div>
+    </div>
+    <div class="card pipe-card" id="pipe-3">
+      <div class="pipe-title">Targeted Policies and Strategy</div>
+    </div>
+    <div class="card pipe-card" id="pipe-4">
+      <div class="pipe-title">Action Plan in Local Level</div>
+    </div>
+
+    <!-- ── Step 3 / 4: NP model cards (front = model name, back = limitation) ── -->
+    <div class="card np-card" id="np-1">
+      <div class="np-card-inner">
+        <div class="np-card-front"><div class="np-card-title">Node-Place Model</div></div>
+        <div class="np-card-back"><div class="np-card-title">Dimensionality</div></div>
+      </div>
+    </div>
+    <div class="card np-card" id="np-2">
+      <div class="np-card-inner">
+        <div class="np-card-front"><div class="np-card-title">Extended NP Model</div></div>
+        <div class="np-card-back"><div class="np-card-title">Indicators</div></div>
+      </div>
+    </div>
+    <div class="card np-card" id="np-3">
+      <div class="np-card-inner">
+        <div class="np-card-front"><div class="np-card-title">Mixed NP Model</div></div>
+        <div class="np-card-back"><div class="np-card-title">Catchment Area</div></div>
+      </div>
+    </div>
+    <div class="card np-card" id="np-4">
+      <div class="np-card-inner">
+        <div class="np-card-front"><div class="np-card-title">Visually Supported NP Model</div></div>
+        <div class="np-card-back"><div class="np-card-title">Spatiotemporal Problems</div></div>
+      </div>
+    </div>
+    <div class="card np-card" id="np-5">
+      <div class="np-card-inner">
+        <div class="np-card-front"><div class="np-card-title">Validated NP Model</div></div>
+        <div class="np-card-back"><div class="np-card-title">Relativity in Results</div></div>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════
+         Future step cards go here
+         ════════════════════════════════════════════════════ -->
+
+    <!-- ── Step 5: comparison table card ── -->
+    <div class="card" id="card-table">
+      <table class="ctbl">
+        <thead>
+          <tr><th>Attribute</th><th>Description</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Case Study</td><td>Milan Metropolitan City</td></tr>
+          <tr><td>Extent</td><td>Functional Urban Area (OECD)</td></tr>
+          <tr><td>Catchment Area</td><td>800 meters walking distance (GIS network analysis)</td></tr>
+          <tr><td>Indicators</td><td>27 indicators</td></tr>
+          <tr><td>Dimensions</td><td>No predefined dimension (EFA – latent dimensions)</td></tr>
+          <tr><td>Clustering Method</td><td>Hierarchical clustering (Ward's method)</td></tr>
+          <tr><td>Number of Clusters</td><td>Based on the dendrogram result</td></tr>
+          <tr><td>Validation</td><td>Desktop audit (through spatial pattern)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Step 6: indicators table (27 rows, scrollable) ── -->
+    <div class="card" id="card-indicators">
+      <div class="ctbl2-wrap">
+        <table class="ctbl2">
+          <colgroup>
+            <col class="c-no"><col class="c-abbr"><col class="c-name"><col class="c-desc">
+          </colgroup>
+          <thead>
+            <tr><th>No.</th><th>Abbr.</th><th>Indicator</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr data-idx="0"><td class="td-no">1</td><td class="td-abbr">N1</td><td class="td-name">Railway lines</td><td class="td-desc">Number of Train Lines operating in the stations</td></tr>
+            <tr data-idx="1"><td class="td-no">2</td><td class="td-abbr">N2</td><td class="td-name">Transit frequency</td><td class="td-desc">Frequency of trains departing the station</td></tr>
+            <tr data-idx="2"><td class="td-no">3</td><td class="td-abbr">N3</td><td class="td-name">Bus Lines</td><td class="td-desc">Number of lines of buses within the station area</td></tr>
+            <tr data-idx="3"><td class="td-no">4</td><td class="td-abbr">N5</td><td class="td-name">Bus stops</td><td class="td-desc">Number of bus stops within the station area</td></tr>
+            <tr data-idx="4"><td class="td-no">5</td><td class="td-abbr">N7</td><td class="td-name">Number of Platforms</td><td class="td-desc">Total number of platforms in each station</td></tr>
+            <tr data-idx="5"><td class="td-no">6</td><td class="td-abbr">N8</td><td class="td-name">Stations within 30-min travel</td><td class="td-desc">Number of accessible stations within 30-min travel on the railway network</td></tr>
+            <tr data-idx="6"><td class="td-no">7</td><td class="td-abbr">N9</td><td class="td-name">Metro stops</td><td class="td-desc">Number of metro stops within the catchment area</td></tr>
+            <tr data-idx="7"><td class="td-no">8</td><td class="td-abbr">N10</td><td class="td-name">Transit betweenness centrality</td><td class="td-desc">The betweenness degree of the station within the transport network</td></tr>
+            <tr data-idx="8"><td class="td-no">9</td><td class="td-abbr">N11</td><td class="td-name">Transit closeness centrality</td><td class="td-desc">The closeness degree of the station within the transport network</td></tr>
+            <tr data-idx="9"><td class="td-no">10</td><td class="td-abbr">P1</td><td class="td-name">Number of Bicycle parking</td><td class="td-desc">Number of bicycle parking racks</td></tr>
+            <tr data-idx="10"><td class="td-no">11</td><td class="td-abbr">P2</td><td class="td-name">Lengths of the bike lanes</td><td class="td-desc">Total length of bike paths in meters within the catchment area</td></tr>
+            <tr data-idx="11"><td class="td-no">12</td><td class="td-abbr">P4</td><td class="td-name">Number of residents</td><td class="td-desc">Total number of people living within the catchment area</td></tr>
+            <tr data-idx="12"><td class="td-no">13</td><td class="td-abbr">P5</td><td class="td-name">Proportion of educational, health, and cultural areas</td><td class="td-desc">Ratio of educational, health, and cultural areas to the total catchment area</td></tr>
+            <tr data-idx="13"><td class="td-no">14</td><td class="td-abbr">P6</td><td class="td-name">Proportion of recreational area</td><td class="td-desc">Ratio of recreational area to total catchment area</td></tr>
+            <tr data-idx="14"><td class="td-no">15</td><td class="td-abbr">P7</td><td class="td-name">Proportion of industrial area</td><td class="td-desc">Ratio of industrial area to total catchment area</td></tr>
+            <tr data-idx="15"><td class="td-no">16</td><td class="td-abbr">P8</td><td class="td-name">Proportion of residential area</td><td class="td-desc">Ratio of residential area to total catchment area</td></tr>
+            <tr data-idx="16"><td class="td-no">17</td><td class="td-abbr">P10</td><td class="td-name">Population density</td><td class="td-desc">Density of population with respect to the catchment area</td></tr>
+            <tr data-idx="17"><td class="td-no">18</td><td class="td-abbr">P11</td><td class="td-name">Proportion of public offices and service facilities</td><td class="td-desc">Ratio of public offices and service facilities to the total catchment area</td></tr>
+            <tr data-idx="18"><td class="td-no">19</td><td class="td-abbr">P12</td><td class="td-name">Land use entropy (H)</td><td class="td-desc">Degree of entropy</td></tr>
+            <tr data-idx="19" class="row-strike"><td class="td-no">20</td><td class="td-abbr">S2</td><td class="td-name">Shortest distance to the bus stations</td><td class="td-desc">Shortest distance to the bus stations</td></tr>
+            <tr data-idx="20" class="row-strike"><td class="td-no">21</td><td class="td-abbr">S3</td><td class="td-name">Shortest route distance to educational facilities (m)</td><td class="td-desc">Calculate the shortest walking route distance from the train station to the educational facilities</td></tr>
+            <tr data-idx="21" class="row-strike"><td class="td-no">22</td><td class="td-abbr">S4</td><td class="td-name">Shortest route distance to cultural facilities (m)</td><td class="td-desc">Calculate the shortest walking route distance from the train station to the cultural facilities</td></tr>
+            <tr data-idx="22" class="row-strike"><td class="td-no">23</td><td class="td-abbr">S5</td><td class="td-name">Shortest route distance to leisure facilities (m)</td><td class="td-desc">Calculate the shortest walking route distance from the train station to the leisure facilities</td></tr>
+            <tr data-idx="23"><td class="td-no">24</td><td class="td-abbr">S6</td><td class="td-name">Shortest route distance to workplaces (m)</td><td class="td-desc">Calculate the shortest walking route distance from the train station to the workplaces</td></tr>
+            <tr data-idx="24"><td class="td-no">25</td><td class="td-abbr">W1</td><td class="td-name">Intersection density</td><td class="td-desc">The number of intersections divided by the area of the catchment area</td></tr>
+            <tr data-idx="25"><td class="td-no">26</td><td class="td-abbr">W2</td><td class="td-name">Street Line Density</td><td class="td-desc">Sum of the length of the lines in km divided by the area in km²</td></tr>
+            <tr data-idx="26"><td class="td-no">27</td><td class="td-abbr">TCI1</td><td class="td-name">Demographic consonance index</td><td class="td-desc">Proposed based on Kamruzzaman's article</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Step 7: big image card ── -->
+    <div class="card" id="card-figjam">
+      <img src="https://i.postimg.cc/CxRKBVWH/Methodology-3.png" alt="Methodology diagram">
+    </div>
+
+    <!-- ── Step 9: iteration badge (floats above card top-right) ── -->
+    <div id="iter-badge">Iteration 1</div>
+
+    <!-- ── Step 9: factor loadings table (23 rows, scrollable) ── -->
+    <div class="card" id="card-factors">
+      <div class="ctbl2-wrap">
+        <table class="ctbl2">
+          <colgroup>
+            <col style="width:50px"><col style="width:255px">
+            <col style="width:80px"><col style="width:80px"><col style="width:80px"><col style="width:80px"><col style="width:80px">
+          </colgroup>
+          <thead>
+            <tr><th>Abbr.</th><th>Indicator</th><th>Factor 1</th><th>Factor 2</th><th>Factor 3</th><th>Factor 4</th><th>Factor 5</th></tr>
+          </thead>
+          <tbody>
+            <tr data-idx="0"><td class="td-abbr">N1</td><td class="td-name">Railway lines</td><td class="td-val"><span class="val-green">0.990</span></td><td class="td-val">−0.012</td><td class="td-val">−0.014</td><td class="td-val">−0.063</td><td class="td-val">−0.009</td></tr>
+            <tr data-idx="1"><td class="td-abbr">N8</td><td class="td-name">Stations within 30-min travel</td><td class="td-val"><span class="val-green">0.886</span></td><td class="td-val">0.063</td><td class="td-val">0.026</td><td class="td-val">0.077</td><td class="td-val">−0.029</td></tr>
+            <tr data-idx="2"><td class="td-abbr">N2</td><td class="td-name">Transit frequency</td><td class="td-val"><span class="val-green">0.880</span></td><td class="td-val">0.124</td><td class="td-val">−0.029</td><td class="td-val">0.036</td><td class="td-val">−0.109</td></tr>
+            <tr data-idx="3"><td class="td-abbr">N10</td><td class="td-name">Transit betweenness centrality</td><td class="td-val"><span class="val-green">0.776</span></td><td class="td-val">−0.248</td><td class="td-val">0.066</td><td class="td-val">0.021</td><td class="td-val">0.228</td></tr>
+            <tr data-idx="4"><td class="td-abbr">N7</td><td class="td-name">Number of Platforms</td><td class="td-val"><span class="val-green">0.713</span></td><td class="td-val">0.024</td><td class="td-val">−0.047</td><td class="td-val">−0.048</td><td class="td-val">0.097</td></tr>
+            <tr data-idx="5"><td class="td-abbr">N11</td><td class="td-name">Transit closeness centrality</td><td class="td-val"><span class="val-green">0.508</span></td><td class="td-val">0.156</td><td class="td-val">0.102</td><td class="td-val">0.136</td><td class="td-val">−0.028</td></tr>
+            <tr data-idx="6" class="row-red"><td class="td-abbr">P1</td><td class="td-name">Number of Bicycle parking</td><td class="td-val"><span class="val-red">0.455</span></td><td class="td-val">0.180</td><td class="td-val">0.097</td><td class="td-val">0.019</td><td class="td-val"><span class="val-red">0.443</span></td></tr>
+            <tr data-idx="7" class="row-red"><td class="td-abbr">P11</td><td class="td-name">Proportion of public offices and service facilities</td><td class="td-val"><span class="val-red">0.400</span></td><td class="td-val">0.161</td><td class="td-val">0.106</td><td class="td-val"><span class="val-red">0.339</span></td><td class="td-val">0.043</td></tr>
+            <tr data-idx="8" class="row-red"><td class="td-abbr">N9</td><td class="td-name">Metro stops</td><td class="td-val">0.295</td><td class="td-val"><span class="val-red">0.429</span></td><td class="td-val">−0.078</td><td class="td-val">−0.115</td><td class="td-val"><span class="val-red">0.455</span></td></tr>
+            <tr data-idx="9"><td class="td-abbr">N3</td><td class="td-name">Bus Lines</td><td class="td-val">0.203</td><td class="td-val"><span class="val-green">0.756</span></td><td class="td-val">−0.084</td><td class="td-val">−0.095</td><td class="td-val">0.009</td></tr>
+            <tr data-idx="10"><td class="td-abbr">P7</td><td class="td-name">Proportion of industrial area</td><td class="td-val">0.170</td><td class="td-val">0.037</td><td class="td-val">−0.106</td><td class="td-val">−0.036</td><td class="td-val"><span class="val-green">−0.492</span></td></tr>
+            <tr data-idx="11"><td class="td-abbr">W2</td><td class="td-name">Street Line Density</td><td class="td-val">0.141</td><td class="td-val">0.283</td><td class="td-val"><span class="val-green">0.733</span></td><td class="td-val">−0.037</td><td class="td-val">−0.039</td></tr>
+            <tr data-idx="12"><td class="td-abbr">TCI1</td><td class="td-name">Demographic consonance index</td><td class="td-val">0.129</td><td class="td-val">0.265</td><td class="td-val">0.214</td><td class="td-val"><span class="val-green">0.346</span></td><td class="td-val">0.077</td></tr>
+            <tr data-idx="13"><td class="td-abbr">W1</td><td class="td-name">Intersection density</td><td class="td-val">0.124</td><td class="td-val">0.079</td><td class="td-val"><span class="val-green">0.866</span></td><td class="td-val">0.026</td><td class="td-val">−0.050</td></tr>
+            <tr data-idx="14" class="row-red"><td class="td-abbr">P5</td><td class="td-name">Proportion of educational, health, and cultural areas</td><td class="td-val">0.048</td><td class="td-val">−0.191</td><td class="td-val">0.131</td><td class="td-val">0.235</td><td class="td-val"><span class="val-red">0.304</span></td></tr>
+            <tr data-idx="15"><td class="td-abbr">P10</td><td class="td-name">Population density</td><td class="td-val">0.033</td><td class="td-val"><span class="val-green">0.718</span></td><td class="td-val">0.282</td><td class="td-val">0.086</td><td class="td-val">0.081</td></tr>
+            <tr data-idx="16" class="row-red"><td class="td-abbr">P12</td><td class="td-name">Land use entropy (H)</td><td class="td-val">0.026</td><td class="td-val">−0.034</td><td class="td-val">−0.021</td><td class="td-val"><span class="val-red">1.011</span></td><td class="td-val">−0.039</td></tr>
+            <tr data-idx="17" class="row-red"><td class="td-abbr">P2</td><td class="td-name">Lengths of the bike lanes</td><td class="td-val">0.012</td><td class="td-val">0.123</td><td class="td-val">0.096</td><td class="td-val">0.202</td><td class="td-val"><span class="val-red">0.213</span></td></tr>
+            <tr data-idx="18"><td class="td-abbr">P4</td><td class="td-name">Number of residents</td><td class="td-val">0.005</td><td class="td-val"><span class="val-green">0.717</span></td><td class="td-val">0.311</td><td class="td-val">0.059</td><td class="td-val">0.091</td></tr>
+            <tr data-idx="19"><td class="td-abbr">N5</td><td class="td-name">Bus stops</td><td class="td-val">−0.035</td><td class="td-val"><span class="val-green">0.865</span></td><td class="td-val">−0.028</td><td class="td-val">0.083</td><td class="td-val">−0.024</td></tr>
+            <tr data-idx="20" class="row-red"><td class="td-abbr">S6</td><td class="td-name">Shortest route distance to workplaces (m)</td><td class="td-val">−0.066</td><td class="td-val"><span class="val-red">0.267</span></td><td class="td-val">−0.131</td><td class="td-val">−0.121</td><td class="td-val">0.160</td></tr>
+            <tr data-idx="21"><td class="td-abbr">P8</td><td class="td-name">Proportion of residential area</td><td class="td-val">−0.165</td><td class="td-val">−0.100</td><td class="td-val"><span class="val-green">0.920</span></td><td class="td-val">−0.040</td><td class="td-val">0.084</td></tr>
+            <tr data-idx="22"><td class="td-abbr">P6</td><td class="td-name">Proportion of recreational area</td><td class="td-val">−0.166</td><td class="td-val">0.210</td><td class="td-val">−0.195</td><td class="td-val"><span class="val-green">0.512</span></td><td class="td-val">0.257</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Step 8: scree plot image card ── -->
+    <div class="card" id="card-screeplot">
+      <img src="https://i.postimg.cc/J42pcb2j/Scree-plot.png" alt="Scree plot">
+    </div>
+
+    <!-- ── Step 10: iteration 2 badge ── -->
+    <div id="iter-badge2">Iteration 2</div>
+
+    <!-- ── Step 10: factor loadings table iteration 2 (19 rows, scrollable) ── -->
+    <div class="card" id="card-factors2">
+      <div class="ctbl2-wrap">
+        <table class="ctbl2">
+          <colgroup>
+            <col style="width:50px"><col style="width:255px">
+            <col style="width:80px"><col style="width:80px"><col style="width:80px"><col style="width:80px">
+          </colgroup>
+          <thead>
+            <tr><th>ABBR.</th><th>Indicator</th><th>Factor 1</th><th>Factor 2</th><th>Factor 3</th><th>Factor 4</th></tr>
+          </thead>
+          <tbody>
+            <tr data-idx="0"><td class="td-abbr">N1</td><td class="td-name">Railway lines</td><td class="td-val"><span class="val-green">0.991</span></td><td class="td-val">−0.021</td><td class="td-val">−0.033</td><td class="td-val">−0.065</td></tr>
+            <tr data-idx="1"><td class="td-abbr">N2</td><td class="td-name">Transit frequency</td><td class="td-val"><span class="val-green">0.827</span></td><td class="td-val">0.134</td><td class="td-val">−0.081</td><td class="td-val">0.008</td></tr>
+            <tr data-idx="2"><td class="td-abbr">N3</td><td class="td-name">Bus Lines</td><td class="td-val">0.205</td><td class="td-val"><span class="val-green">0.752</span></td><td class="td-val">−0.115</td><td class="td-val">−0.086</td></tr>
+            <tr data-idx="3"><td class="td-abbr">N5</td><td class="td-name">Bus stops</td><td class="td-val">−0.049</td><td class="td-val"><span class="val-green">0.878</span></td><td class="td-val">−0.074</td><td class="td-val">0.050</td></tr>
+            <tr data-idx="4"><td class="td-abbr">N7</td><td class="td-name">Number of Platforms</td><td class="td-val"><span class="val-green">0.750</span></td><td class="td-val">0.022</td><td class="td-val">−0.045</td><td class="td-val">−0.028</td></tr>
+            <tr data-idx="5"><td class="td-abbr">N8</td><td class="td-name">Stations within 30-min travel</td><td class="td-val"><span class="val-green">0.877</span></td><td class="td-val">0.059</td><td class="td-val">0.001</td><td class="td-val">0.047</td></tr>
+            <tr data-idx="6"><td class="td-abbr">P4</td><td class="td-name">Number of residents</td><td class="td-val">0.012</td><td class="td-val"><span class="val-green">0.776</span></td><td class="td-val">0.262</td><td class="td-val">0.067</td></tr>
+            <tr data-idx="7"><td class="td-abbr">P10</td><td class="td-name">Population density</td><td class="td-val">0.035</td><td class="td-val"><span class="val-green">0.775</span></td><td class="td-val">0.232</td><td class="td-val">0.094</td></tr>
+            <tr data-idx="8"><td class="td-abbr">TCI1</td><td class="td-name">Demographic consonance index</td><td class="td-val">0.127</td><td class="td-val">0.301</td><td class="td-val">0.182</td><td class="td-val"><span class="val-green">0.398</span></td></tr>
+            <tr data-idx="9"><td class="td-abbr">P1</td><td class="td-name">Number of Bicycle parking</td><td class="td-val"><span class="val-green">0.596</span></td><td class="td-val">0.206</td><td class="td-val">0.146</td><td class="td-val">0.043</td></tr>
+            <tr data-idx="10" class="row-red"><td class="td-abbr">P5</td><td class="td-name">Proportion of educational, health, and cultural areas</td><td class="td-val">0.170</td><td class="td-val">−0.198</td><td class="td-val">0.209</td><td class="td-val"><span class="val-red">0.211</span></td></tr>
+            <tr data-idx="11" class="row-red"><td class="td-abbr">P7</td><td class="td-name">Proportion of industrial area</td><td class="td-val">−0.019</td><td class="td-val">0.040</td><td class="td-val"><span class="val-red">−0.208</span></td><td class="td-val">−0.077</td></tr>
+            <tr data-idx="12"><td class="td-abbr">P8</td><td class="td-name">Proportion of residential area</td><td class="td-val">−0.123</td><td class="td-val">−0.093</td><td class="td-val"><span class="val-green">0.948</span></td><td class="td-val">−0.022</td></tr>
+            <tr data-idx="13"><td class="td-abbr">P11</td><td class="td-name">Proportion of public offices and service facilities</td><td class="td-val"><span class="val-green">0.395</span></td><td class="td-val">0.183</td><td class="td-val">0.076</td><td class="td-val"><span class="val-green">0.373</span></td></tr>
+            <tr data-idx="14" class="row-red"><td class="td-abbr">P12</td><td class="td-name">Land use entropy (H)</td><td class="td-val">−0.023</td><td class="td-val">−0.012</td><td class="td-val">−0.057</td><td class="td-val"><span class="val-red">1.009</span></td></tr>
+            <tr data-idx="15"><td class="td-abbr">N10</td><td class="td-name">Transit betweenness centrality</td><td class="td-val"><span class="val-green">0.858</span></td><td class="td-val">−0.249</td><td class="td-val">0.103</td><td class="td-val">0.052</td></tr>
+            <tr data-idx="16"><td class="td-abbr">N11</td><td class="td-name">Transit closeness centrality</td><td class="td-val"><span class="val-green">0.499</span></td><td class="td-val">0.173</td><td class="td-val">0.068</td><td class="td-val">0.048</td></tr>
+            <tr data-idx="17"><td class="td-abbr">W1</td><td class="td-name">Intersection density</td><td class="td-val">0.116</td><td class="td-val">0.099</td><td class="td-val"><span class="val-green">0.824</span></td><td class="td-val">0.001</td></tr>
+            <tr data-idx="18"><td class="td-abbr">W2</td><td class="td-name">Street Line Density</td><td class="td-val">0.132</td><td class="td-val">0.305</td><td class="td-val"><span class="val-green">0.691</span></td><td class="td-val">−0.055</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Step 11: iteration 3 badge ── -->
+    <div id="iter-badge3">Iteration 3</div>
+
+    <!-- ── Step 11: factor loadings table iteration 3 (16 rows, 3 factors, scrollable) ── -->
+    <div class="card" id="card-factors3">
+      <div class="ctbl2-wrap">
+        <table class="ctbl2">
+          <colgroup>
+            <col style="width:50px"><col style="width:285px">
+            <col style="width:90px"><col style="width:90px"><col style="width:90px">
+          </colgroup>
+          <thead>
+            <tr><th>ABBR.</th><th>Indicator</th><th>Factor 1</th><th>Factor 2</th><th>Factor 3</th></tr>
+          </thead>
+          <tbody>
+            <tr data-idx="0"><td class="td-abbr">N1</td><td class="td-name">Railway lines</td><td class="td-val"><span class="val-green">0.948</span></td><td class="td-val">−0.061</td><td class="td-val">0.023</td></tr>
+            <tr data-idx="1"><td class="td-abbr">N10</td><td class="td-name">Transit betweenness centrality</td><td class="td-val"><span class="val-green">0.923</span></td><td class="td-val">0.112</td><td class="td-val">−0.281</td></tr>
+            <tr data-idx="2"><td class="td-abbr">N11</td><td class="td-name">Transit closeness centrality</td><td class="td-val"><span class="val-green">0.529</span></td><td class="td-val">−0.007</td><td class="td-val">0.291</td></tr>
+            <tr data-idx="3"><td class="td-abbr">N2</td><td class="td-name">Transit frequency</td><td class="td-val"><span class="val-green">0.830</span></td><td class="td-val">−0.103</td><td class="td-val">0.176</td></tr>
+            <tr data-idx="4"><td class="td-abbr">N3</td><td class="td-name">Bus Lines</td><td class="td-val">0.228</td><td class="td-val">−0.101</td><td class="td-val"><span class="val-green">0.752</span></td></tr>
+            <tr data-idx="5"><td class="td-abbr">N5</td><td class="td-name">Bus stops</td><td class="td-val">−0.035</td><td class="td-val">−0.052</td><td class="td-val"><span class="val-green">0.927</span></td></tr>
+            <tr data-idx="6"><td class="td-abbr">N7</td><td class="td-name">Number of Platforms</td><td class="td-val"><span class="val-green">0.817</span></td><td class="td-val">−0.050</td><td class="td-val">−0.019</td></tr>
+            <tr data-idx="7"><td class="td-abbr">N8</td><td class="td-name">Stations within 30-min travel</td><td class="td-val"><span class="val-green">0.864</span></td><td class="td-val">−0.042</td><td class="td-val">0.145</td></tr>
+            <tr data-idx="8"><td class="td-abbr">P1</td><td class="td-name">Number of Bicycle parking</td><td class="td-val"><span class="val-green">0.652</span></td><td class="td-val">0.233</td><td class="td-val">0.128</td></tr>
+            <tr data-idx="9"><td class="td-abbr">P10</td><td class="td-name">Population density</td><td class="td-val">0.102</td><td class="td-val">0.316</td><td class="td-val"><span class="val-green">0.720</span></td></tr>
+            <tr data-idx="10"><td class="td-abbr">P4</td><td class="td-name">Number of residents</td><td class="td-val">0.076</td><td class="td-val">0.342</td><td class="td-val"><span class="val-green">0.719</span></td></tr>
+            <tr data-idx="11" class="row-red"><td class="td-abbr">P7</td><td class="td-name">Proportion of industrial area</td><td class="td-val">−0.138</td><td class="td-val"><span class="val-red">−0.532</span></td><td class="td-val"><span class="val-red">0.357</span></td></tr>
+            <tr data-idx="12"><td class="td-abbr">P8</td><td class="td-name">Proportion of residential area</td><td class="td-val">−0.132</td><td class="td-val"><span class="val-green">0.948</span></td><td class="td-val">−0.058</td></tr>
+            <tr data-idx="13"><td class="td-abbr">TCI1</td><td class="td-name">Demographic consonance index</td><td class="td-val">0.146</td><td class="td-val">0.255</td><td class="td-val"><span class="val-green">0.417</span></td></tr>
+            <tr data-idx="14"><td class="td-abbr">W1</td><td class="td-name">Intersection density</td><td class="td-val">0.084</td><td class="td-val"><span class="val-green">0.776</span></td><td class="td-val">0.202</td></tr>
+            <tr data-idx="15" class="row-red"><td class="td-abbr">W2</td><td class="td-name">Street Line Density</td><td class="td-val">0.119</td><td class="td-val"><span class="val-red">0.660</span></td><td class="td-val"><span class="val-red">0.364</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Step 12: iteration 4 badge ── -->
+    <div id="iter-badge4">Iteration 4</div>
+
+    <!-- ── Step 12: factor loadings table iteration 4 (14 rows, 3 factors, no cross-loaders) ── -->
+    <div class="card" id="card-factors4">
+      <div class="ctbl2-wrap">
+        <table class="ctbl2">
+          <colgroup>
+            <col style="width:50px"><col style="width:285px">
+            <col style="width:90px"><col style="width:90px"><col style="width:90px">
+          </colgroup>
+          <thead>
+            <tr><th>ABBR.</th><th>Indicator</th><th>Factor 1</th><th>Factor 2</th><th>Factor 3</th></tr>
+          </thead>
+          <tbody>
+            <tr data-idx="0"><td class="td-abbr">N5</td><td class="td-name">Bus stops</td><td class="td-val">−0.051</td><td class="td-val"><span class="val-green">0.933</span></td><td class="td-val">−0.110</td></tr>
+            <tr data-idx="1"><td class="td-abbr">P10</td><td class="td-name">Population density</td><td class="td-val">0.048</td><td class="td-val"><span class="val-green">0.800</span></td><td class="td-val">0.208</td></tr>
+            <tr data-idx="2"><td class="td-abbr">P4</td><td class="td-name">Number of residents</td><td class="td-val">0.018</td><td class="td-val"><span class="val-green">0.796</span></td><td class="td-val">0.238</td></tr>
+            <tr data-idx="3"><td class="td-abbr">N3</td><td class="td-name">Bus Lines</td><td class="td-val">0.218</td><td class="td-val"><span class="val-green">0.709</span></td><td class="td-val">−0.114</td></tr>
+            <tr data-idx="4"><td class="td-abbr">TCI1</td><td class="td-name">Demographic consonance index</td><td class="td-val">0.163</td><td class="td-val"><span class="val-green">0.373</span></td><td class="td-val">0.175</td></tr>
+            <tr data-idx="5"><td class="td-abbr">W2</td><td class="td-name">Street Line Density</td><td class="td-val">0.125</td><td class="td-val">0.221</td><td class="td-val"><span class="val-green">0.753</span></td></tr>
+            <tr data-idx="6"><td class="td-abbr">N11</td><td class="td-name">Transit closeness centrality</td><td class="td-val"><span class="val-green">0.542</span></td><td class="td-val">0.175</td><td class="td-val">0.057</td></tr>
+            <tr data-idx="7"><td class="td-abbr">P1</td><td class="td-name">Number of Bicycle parking</td><td class="td-val"><span class="val-green">0.590</span></td><td class="td-val">0.165</td><td class="td-val">0.161</td></tr>
+            <tr data-idx="8"><td class="td-abbr">N2</td><td class="td-name">Transit frequency</td><td class="td-val"><span class="val-green">0.821</span></td><td class="td-val">0.122</td><td class="td-val">−0.071</td></tr>
+            <tr data-idx="9"><td class="td-abbr">N8</td><td class="td-name">Stations within 30-min travel</td><td class="td-val"><span class="val-green">0.914</span></td><td class="td-val">0.058</td><td class="td-val">−0.015</td></tr>
+            <tr data-idx="10"><td class="td-abbr">W1</td><td class="td-name">Intersection density</td><td class="td-val">0.099</td><td class="td-val">0.018</td><td class="td-val"><span class="val-green">0.915</span></td></tr>
+            <tr data-idx="11"><td class="td-abbr">N7</td><td class="td-name">Number of Platforms</td><td class="td-val"><span class="val-green">0.747</span></td><td class="td-val">−0.012</td><td class="td-val">−0.033</td></tr>
+            <tr data-idx="12"><td class="td-abbr">P8</td><td class="td-name">Proportion of residential area</td><td class="td-val">−0.167</td><td class="td-val">−0.051</td><td class="td-val"><span class="val-green">0.869</span></td></tr>
+            <tr data-idx="13"><td class="td-abbr">N10</td><td class="td-name">Transit betweenness centrality</td><td class="td-val"><span class="val-green">0.842</span></td><td class="td-val">−0.218</td><td class="td-val">0.073</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Step 13: result badge ── -->
+    <div id="result-badge">Factor Structure</div>
+
+    <!-- ── Step 13: grouped factor structure table ── -->
+    <div class="card" id="card-factors5">
+      <div class="ctbl2-wrap">
+        <table class="ctbl2">
+          <colgroup>
+            <col style="width:148px"><col style="width:210px"><col style="width:48px">
+            <col style="width:75px"><col style="width:75px"><col style="width:75px">
+          </colgroup>
+          <thead>
+            <tr><th>Dimension</th><th>Indicator</th><th>Abbr.</th><th>Factor 1</th><th>Factor 2</th><th>Factor 3</th></tr>
+          </thead>
+          <tbody>
+            <!-- ── Factor 1 ── -->
+            <tr>
+              <td class="td-dim" rowspan="6" style="background:rgba(58,125,201,0.10);">Factor 1<br>Multimodal<br>Regional<br>Accessibility</td>
+              <td class="td-name">Stations within 30-min travel</td><td class="td-abbr">N8</td>
+              <td class="td-val"><span class="val-green">0.914</span></td><td class="td-val">0.058</td><td class="td-val">−0.015</td>
+            </tr>
+            <tr>
+              <td class="td-name">Transit betweenness centrality</td><td class="td-abbr">N10</td>
+              <td class="td-val"><span class="val-green">0.842</span></td><td class="td-val">−0.218</td><td class="td-val">0.073</td>
+            </tr>
+            <tr>
+              <td class="td-name">Transit frequency</td><td class="td-abbr">N2</td>
+              <td class="td-val"><span class="val-green">0.821</span></td><td class="td-val">0.122</td><td class="td-val">−0.071</td>
+            </tr>
+            <tr>
+              <td class="td-name">Number of Platforms</td><td class="td-abbr">N7</td>
+              <td class="td-val"><span class="val-green">0.747</span></td><td class="td-val">−0.012</td><td class="td-val">−0.033</td>
+            </tr>
+            <tr>
+              <td class="td-name">Transit closeness centrality</td><td class="td-abbr">N11</td>
+              <td class="td-val"><span class="val-green">0.542</span></td><td class="td-val">0.175</td><td class="td-val">0.057</td>
+            </tr>
+            <tr>
+              <td class="td-name">Number of Bicycle parking</td><td class="td-abbr">P1</td>
+              <td class="td-val"><span class="val-green">0.590</span></td><td class="td-val">0.165</td><td class="td-val">0.161</td>
+            </tr>
+            <!-- ── Factor 2 ── -->
+            <tr class="row-group-start">
+              <td class="td-dim" rowspan="5" style="background:rgba(196,146,42,0.10);">Factor 2<br>Local Intensity<br>and<br>Service Hub</td>
+              <td class="td-name">Bus stops</td><td class="td-abbr">N5</td>
+              <td class="td-val">−0.051</td><td class="td-val"><span class="val-green">0.933</span></td><td class="td-val">−0.110</td>
+            </tr>
+            <tr>
+              <td class="td-name">Population density</td><td class="td-abbr">P10</td>
+              <td class="td-val">0.048</td><td class="td-val"><span class="val-green">0.800</span></td><td class="td-val">0.208</td>
+            </tr>
+            <tr>
+              <td class="td-name">Number of residents</td><td class="td-abbr">P4</td>
+              <td class="td-val">0.018</td><td class="td-val"><span class="val-green">0.796</span></td><td class="td-val">0.238</td>
+            </tr>
+            <tr>
+              <td class="td-name">Bus Lines</td><td class="td-abbr">N3</td>
+              <td class="td-val">0.218</td><td class="td-val"><span class="val-green">0.709</span></td><td class="td-val">−0.114</td>
+            </tr>
+            <tr>
+              <td class="td-name">Demographic consonance index</td><td class="td-abbr">TCI1</td>
+              <td class="td-val">0.163</td><td class="td-val"><span class="val-green">0.373</span></td><td class="td-val">0.175</td>
+            </tr>
+            <!-- ── Factor 3 ── -->
+            <tr class="row-group-start">
+              <td class="td-dim" rowspan="3" style="background:rgba(42,157,143,0.10);">Factor 3<br>Urban Fabric<br>and Walkable<br>Design</td>
+              <td class="td-name">Intersection density</td><td class="td-abbr">W1</td>
+              <td class="td-val">0.099</td><td class="td-val">0.018</td><td class="td-val"><span class="val-green">0.915</span></td>
+            </tr>
+            <tr>
+              <td class="td-name">Street Line Density</td><td class="td-abbr">W2</td>
+              <td class="td-val">0.125</td><td class="td-val">0.221</td><td class="td-val"><span class="val-green">0.753</span></td>
+            </tr>
+            <tr>
+              <td class="td-name">Proportion of residential area</td><td class="td-abbr">P8</td>
+              <td class="td-val">−0.167</td><td class="td-val">−0.051</td><td class="td-val"><span class="val-green">0.869</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Step 14: dendrogram preview (click to open fullview) ── -->
+    <div class="card" id="card-dendro">
+      <img src="https://i.postimg.cc/Y0xFNp48/Milan-Dendrogram-7-Clusters-Fixed.png" alt="Dendrogram — 7 clusters">
+      <div class="dendro-hint">Click to open full detail view</div>
+    </div>
+
+    <!-- ── Image overlay (opened by clickable NP cards) ── -->
+    <div id="img-overlay">
+      <img id="overlay-img" src="" alt="">
+      <button id="overlay-close">Close</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Controls -->
+<div id="controls">
+  <button class="ctrl-btn" id="btn-prev">← Back</button>
+  <span id="step-info">Step 0 of 0</span>
+  <button class="ctrl-btn" id="btn-next">Next →</button>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+/* ── Responsive scaling ───────────────────────────────────── */
+const stageEl = document.getElementById('stage');
+function fitStage() {
+  const scale = Math.min(window.innerWidth / 1000, window.innerHeight / 640, 1);
+  stageEl.style.transform = `scale(${scale})`;
+}
+fitStage();
+window.addEventListener('resize', fitStage);
+
+/* ── Timer helpers ────────────────────────────────────────── */
+let pendingTimers = [];
+function later(fn, ms) { pendingTimers.push(setTimeout(fn, ms)); }
+function clearTimers() { pendingTimers.forEach(clearTimeout); pendingTimers = []; }
+
+/* ── Element refs ─────────────────────────────────────────── */
+const bgOverlay   = document.getElementById('bg-overlay');
+const cardTitle   = document.getElementById('card-title');
+const cardContext = document.getElementById('card-context');
+
+/* ── Thread helpers ───────────────────────────────────────── */
+const svgEl = document.getElementById('threads-svg');
+const threads = {};
+function makeThread(id, color) {
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '3');
+  line.setAttribute('stroke-dasharray', 'none');
+  line.setAttribute('opacity', '0');
+  line.style.transition = 'opacity 0.65s ease';
+  svgEl.appendChild(line);
+  threads[id] = line;
+}
+function posThread(id, x1, y1, x2, y2) {
+  const l = threads[id];
+  l.setAttribute('x1',x1); l.setAttribute('y1',y1);
+  l.setAttribute('x2',x2); l.setAttribute('y2',y2);
+}
+function showThread(id) { threads[id].setAttribute('opacity','1'); }
+function hideThread(id) { threads[id].setAttribute('opacity','0'); }
+
+/* ── Step 1 threads: hub (500,320) → each surrounding card centre ── */
+makeThread('ctx-t1', '#2A9D8F'); posThread('ctx-t1', 500, 320, 500, 145); /* top         */
+makeThread('ctx-t2', '#3A7DC9'); posThread('ctx-t2', 500, 320, 162, 250); /* upper-left  */
+makeThread('ctx-t3', '#C4922A'); posThread('ctx-t3', 500, 320, 838, 250); /* upper-right */
+makeThread('ctx-t4', '#3A9B5C'); posThread('ctx-t4', 500, 320, 162, 480); /* lower-left  */
+makeThread('ctx-t5', '#C0392B'); posThread('ctx-t5', 500, 320, 838, 480); /* lower-right */
+
+const ctxThreadNames = ['ctx-t1','ctx-t2','ctx-t3','ctx-t4','ctx-t5'];
+const ctxSurround    = ['ctx-1','ctx-2','ctx-3','ctx-4','ctx-5'].map(id => document.getElementById(id));
+
+/* ── Step 2 threads (edge-to-edge, match flowchart in sketch) ──────
+   tod-sim  : TOD right-centre   → Simplify left-centre   horizontal →
+   sim-clu  : Simplify bottom    → Clusters top            vertical   ↓
+   clu-pol  : Clusters left      → Targeted right          horizontal ←
+   pol-actV : Targeted bottom    → elbow point             vertical   ↓
+   pol-actH : elbow point        → Action Plan left        horizontal →
+   ──────────────────────────────────────────────────────────────────── */
+makeThread('tod-sim',   '#C4922A'); posThread('tod-sim',   325, 150, 675, 150);
+makeThread('sim-clu',   '#888');    posThread('sim-clu',   773, 205, 773, 280);
+makeThread('clu-pol',   '#888');    posThread('clu-pol',   675, 335, 325, 335);
+makeThread('pol-actV',  '#888');    posThread('pol-actV',  228, 390, 228, 505);
+makeThread('pol-actH',  '#888');    posThread('pol-actH',  228, 505, 675, 505);
+
+const pipeThreadNames = ['tod-sim','sim-clu','clu-pol','pol-actV','pol-actH'];
+const pipeCards       = ['pipe-1','pipe-2','pipe-3','pipe-4'].map(id => document.getElementById(id));
+const cardTodMethod   = document.getElementById('card-tod-method');
+
+/* ── Step 3 threads — orthogonal org-chart tree ──────────────────────────
+   TOD bottom-centre: (500, 200)
+   Branch y = 310  (midpoint between 200 and 420)
+   NP card top-centres (top=420): x = 110, 305, 500, 695, 890
+
+   Structure:
+     np-stem : vertical from TOD bottom → branch y     (500,200)→(500,310)
+     np-bar  : full horizontal branch bar              (110,310)→(890,310)
+     np-d1..5: coloured vertical drops to each card   (cx,310)→(cx,420)
+   ─────────────────────────────────────────────────────────────────────────── */
+makeThread('np-stem', '#C4922A'); posThread('np-stem', 500, 200, 500, 310);
+makeThread('np-bar',  '#C4922A'); posThread('np-bar',  110, 310, 890, 310);
+makeThread('np-d1',  '#C4922A'); posThread('np-d1', 110, 310, 110, 420);
+makeThread('np-d2',  '#C4922A'); posThread('np-d2', 305, 310, 305, 420);
+makeThread('np-d3',  '#C4922A'); posThread('np-d3', 500, 310, 500, 420);
+makeThread('np-d4',  '#C4922A'); posThread('np-d4', 695, 310, 695, 420);
+makeThread('np-d5',  '#C4922A'); posThread('np-d5', 890, 310, 890, 420);
+
+const npThreadNames = ['np-stem','np-bar','np-d1','np-d2','np-d3','np-d4','np-d5'];
+const npCards       = ['np-1','np-2','np-3','np-4','np-5'].map(id => document.getElementById(id));
+
+/* ── Image overlay ────────────────────────────────────────── */
+const imgOverlay = document.getElementById('img-overlay');
+const overlayImg = document.getElementById('overlay-img');
+
+function openOverlay(src) { overlayImg.src = src; imgOverlay.classList.add('active'); }
+function closeOverlay()   { imgOverlay.classList.remove('active'); }
+
+document.getElementById('overlay-close').addEventListener('click', closeOverlay);
+imgOverlay.addEventListener('click', e => { if (e.target === imgOverlay) closeOverlay(); });
+
+/* np-1 — front: Node-Place Model · back: Dimensionality */
+const np1El = document.getElementById('np-1');
+np1El.classList.add('np-clickable');
+np1El.addEventListener('click', () => {
+  if (np1El.classList.contains('flipped'))
+    openOverlay('https://i.postimg.cc/66ZLy4r4/dimenstionality.png');
+  else
+    openOverlay('https://i.postimg.cc/yx1qNKMT/Screenshot-2026-05-18-181345.png');
+});
+
+/* np-2 — back: Indicators */
+const np2El = document.getElementById('np-2');
+np2El.addEventListener('click', () => {
+  if (np2El.classList.contains('flipped'))
+    openOverlay('https://i.postimg.cc/FKJ1D3s0/photo-2026-05-18-18-58-44.jpg');
+});
+
+/* np-3 — back: Catchment Area */
+const np3El = document.getElementById('np-3');
+np3El.addEventListener('click', () => {
+  if (np3El.classList.contains('flipped'))
+    openOverlay('https://i.postimg.cc/hGyLk99T/Layout4.png');
+});
+
+/* np-4 — back: Spatiotemporal Problems */
+const np4El = document.getElementById('np-4');
+np4El.addEventListener('click', () => {
+  if (np4El.classList.contains('flipped'))
+    openOverlay('https://i.postimg.cc/DyzPgvRw/Untitled-design.png');
+});
+
+/* ── Step machine ─────────────────────────────────────────── */
+/*
+  TOTAL = index of the last step.
+  Update this number as new steps are added:
+    1 step  → TOTAL = 0
+    2 steps → TOTAL = 1   (steps 0 and 1)
+    etc.
+*/
+const TOTAL = 14;
+let step = 0;
+
+function applyStep(s) {
+  clearTimers();
+  closeOverlay();
+  cardTodMethod.classList.remove('tod-discrepancy');
+  document.getElementById('card-figjam').classList.remove('visible');
+  document.getElementById('card-table').classList.remove('visible');
+  document.getElementById('card-indicators').classList.remove('visible');
+  document.getElementById('card-screeplot').classList.remove('visible');
+  document.getElementById('card-factors').classList.remove('visible');
+  document.getElementById('iter-badge').classList.remove('visible');
+  document.getElementById('card-factors2').classList.remove('visible');
+  document.getElementById('iter-badge2').classList.remove('visible');
+  document.getElementById('card-factors3').classList.remove('visible');
+  document.getElementById('iter-badge3').classList.remove('visible');
+  document.getElementById('card-factors4').classList.remove('visible');
+  document.getElementById('iter-badge4').classList.remove('visible');
+  document.getElementById('card-factors5').classList.remove('visible');
+  document.getElementById('result-badge').classList.remove('visible');
+  document.getElementById('card-dendro').classList.remove('visible');
+  const prevStep = step;
+  step = Math.max(0, Math.min(TOTAL, s));
+  document.getElementById('step-info').textContent = `Step ${step} of ${TOTAL}`;
+  bgOverlay.classList.toggle('active', step > 0);
+  document.getElementById('btn-prev').disabled = (step <= 0);
+  document.getElementById('btn-next').disabled = (step >= TOTAL);
+
+  /* ── Step 0: big centred title → auto-shrinks to header ── */
+  if (step === 0) {
+    /* Reset any leftover header state and inline overrides */
+    cardTitle.classList.remove('state-header', 'state-center');
+    cardTitle.style.left   = '';
+    cardTitle.style.top    = '';
+    cardTitle.style.width  = '';
+    cardTitle.style.height = '';
+    cardContext.classList.remove('visible', 'state-small');
+    ctxSurround.forEach(c => c.classList.remove('visible'));
+    ctxThreadNames.forEach(hideThread);
+    /* also clean steps 2 & 3 */
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+
+    /* Appear big */
+    later(() => cardTitle.classList.add('state-center'), 60);
+
+    /* After 3 s → transition to header strip (identical technique to
+       the original file's card-t1 state-header in step 2) */
+    later(() => {
+      /* 1. Temporarily apply header layout to measure natural width */
+      cardTitle.classList.add('state-header');
+      cardTitle.style.visibility = 'hidden';
+      cardTitle.style.width = 'max-content';
+      const contentW = cardTitle.scrollWidth + 2;
+
+      /* 2. Reset width and remove class before reflow */
+      cardTitle.style.width = '648px';
+      cardTitle.classList.remove('state-header');
+      cardTitle.style.visibility = '';
+      cardTitle.getBoundingClientRect(); /* force reflow */
+
+      /* 3. Re-apply class + set final geometry as inline styles
+            so CSS transitions animate left / top / width / height */
+      cardTitle.classList.add('state-header');
+      cardTitle.style.left   = '6px';
+      cardTitle.style.top    = '10px';
+      cardTitle.style.height = '64px';
+      cardTitle.style.width  = contentW + 'px';
+    }, 3000);
+
+    /* 3 000 ms (transition start) + 900 ms (transition duration) + 1 000 ms (pause) */
+    later(() => cardContext.classList.add('visible'), 4900);
+  }
+
+  /* ── Step 1: context card shrinks to hub, 5 cards radiate out ── */
+  if (step === 1) {
+    /* Clean steps 2 & 3 */
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    /* Hide surrounding cards (clean slate for back-navigation) */
+    ctxSurround.forEach(c => c.classList.remove('visible'));
+    ctxThreadNames.forEach(hideThread);
+
+    /* Ensure context card is visible, then shrink it to hub */
+    cardContext.classList.add('visible');
+    later(() => cardContext.classList.add('state-small'), 60);
+
+    /* Surrounding cards + threads appear staggered after hub starts shrinking */
+    later(() => { ctxSurround[0].classList.add('visible'); showThread('ctx-t1'); }, 600);
+    later(() => { ctxSurround[1].classList.add('visible'); showThread('ctx-t2'); }, 740);
+    later(() => { ctxSurround[2].classList.add('visible'); showThread('ctx-t3'); }, 880);
+    later(() => { ctxSurround[3].classList.add('visible'); showThread('ctx-t4'); }, 1020);
+    later(() => { ctxSurround[4].classList.add('visible'); showThread('ctx-t5'); }, 1160);
+  }
+
+  /* ── Step 2: step-1 cards leave → TOD card big → shrinks to top-left
+              → 4 flow cards appear 1 s apart in the flowchart layout ── */
+  if (step === 2) {
+    /* Hide step 1 */
+    cardContext.classList.remove('visible', 'state-small');
+    ctxSurround.forEach(c => c.classList.remove('visible'));
+    ctxThreadNames.forEach(hideThread);
+    /* Reset flow cards & step 3 NP cards */
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+
+    if (prevStep > step) {
+      /* ── Backward (from step 3+): clear step-3 inline position so CSS
+            state-small (left:130, top:95) takes over, then restore pipe cards ── */
+      cardTodMethod.style.left = '';
+      cardTodMethod.style.top  = '';
+      cardTodMethod.classList.remove('state-center');
+      cardTodMethod.classList.add('state-small');
+      later(() => {
+        pipeCards.forEach(c => c.classList.add('visible'));
+        pipeThreadNames.forEach(showThread);
+      }, 400);
+    } else {
+      /* ── Forward (from step 1): full sequence ── */
+      cardTodMethod.classList.remove('state-small', 'state-center');
+
+      /* 1. Appear big and centred */
+      later(() => cardTodMethod.classList.add('state-center'), 60);
+
+      /* 2. After 3 s — shrink to normal card at top-left (CSS transition handles it) */
+      later(() => cardTodMethod.classList.add('state-small'), 3000);
+
+      /* 3. Flow cards appear 1 s apart, starting 1 s after TOD card settles
+            TOD settles at 3 000 + 900 = 3 900 ms → first card at 4 900 ms */
+      later(() => { pipeCards[0].classList.add('visible'); showThread('tod-sim');  }, 4900);
+      later(() => { pipeCards[1].classList.add('visible'); showThread('sim-clu');  }, 6900);
+      later(() => { pipeCards[2].classList.add('visible'); showThread('clu-pol');  }, 8900);
+      later(() => { pipeCards[3].classList.add('visible');
+                    showThread('pol-actV'); showThread('pol-actH'); }, 10900);
+    }
+  }
+
+  /* ── Step 3: pipe cards leave → TOD slides to top-centre → NP tree fans out ── */
+  if (step === 3) {
+    /* Pipe cards & threads gone instantly */
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    /* NP cards start hidden and unflipped (clean re-entry) */
+    npCards.forEach(c => c.classList.remove('visible', 'flipped'));
+    npThreadNames.forEach(hideThread);
+
+    if (prevStep > step) {
+      /* ── Backward (from future steps): show step-3 end-state immediately ── */
+      cardTodMethod.classList.remove('state-center');
+      cardTodMethod.classList.add('state-small');
+      cardTodMethod.style.left = '403px';
+      cardTodMethod.style.top  = '90px';
+      later(() => {
+        npCards.forEach(c => c.classList.add('visible'));
+        npThreadNames.forEach(showThread);
+      }, 400);
+    } else {
+      /* ── Forward (from step 2): full sequence ── */
+      /* Ensure small sizing; clear any prior inline position so CSS gives (130,95) */
+      cardTodMethod.classList.remove('state-center');
+      cardTodMethod.classList.add('state-small');
+      cardTodMethod.style.left = '';
+      cardTodMethod.style.top  = '';
+      cardTodMethod.getBoundingClientRect(); /* force reflow at CSS position */
+
+      /* After 1 s: slide TOD to top-centre — CSS transition fires automatically */
+      later(() => {
+        cardTodMethod.style.left = '403px';
+        cardTodMethod.style.top  = '90px';
+      }, 1000);
+
+      /* After TOD settles (1000+900 ms) + 2 s pause = 3900 ms
+         Stem + bar materialise first, then drops + cards stagger every 200 ms */
+      later(() => { showThread('np-stem'); showThread('np-bar'); }, 3900);
+      later(() => { npCards[0].classList.add('visible'); showThread('np-d1'); }, 3900);
+      later(() => { npCards[1].classList.add('visible'); showThread('np-d2'); }, 4100);
+      later(() => { npCards[2].classList.add('visible'); showThread('np-d3'); }, 4300);
+      later(() => { npCards[3].classList.add('visible'); showThread('np-d4'); }, 4500);
+      later(() => { npCards[4].classList.add('visible'); showThread('np-d5'); }, 4700);
+    }
+  }
+
+  /* ── Step 4: cards remain, flip one by one to reveal new labels ── */
+  if (step === 4) {
+    /* Ensure full step-3 state is present (handles direct jumps) */
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-center');
+    cardTodMethod.classList.add('state-small');
+    cardTodMethod.style.left = '403px';
+    cardTodMethod.style.top  = '90px';
+    npCards.forEach(c => c.classList.add('visible'));
+    npThreadNames.forEach(showThread);
+
+    /* Reveal subtitle on TOD card */
+    later(() => cardTodMethod.classList.add('tod-discrepancy'), 60);
+
+    if (prevStep > step) {
+      /* Backward from future steps: show all flipped immediately */
+      npCards.forEach(c => c.classList.add('flipped'));
+    } else {
+      /* Forward: unflip first (clean slate), then flip one by one */
+      npCards.forEach(c => c.classList.remove('flipped'));
+      later(() => npCards[0].classList.add('flipped'),  100);
+      later(() => npCards[1].classList.add('flipped'),  600);
+      later(() => npCards[2].classList.add('flipped'), 1100);
+      later(() => npCards[3].classList.add('flipped'), 1600);
+      later(() => npCards[4].classList.add('flipped'), 2100);
+    }
+  }
+
+  /* ── Step 5: clear step-4, show comparison table ── */
+  if (step === 5) {
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    later(() => document.getElementById('card-table').classList.add('visible'), 300);
+  }
+
+  /* ── Step 6: show big FigJam image card ── */
+  if (step === 6) {
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    later(() => document.getElementById('card-figjam').classList.add('visible'), 300);
+  }
+
+  /* ── Step 7: show indicators table with S2-S5 strike animation ── */
+  if (step === 7) {
+    /* Restore original row order and clear any struck state from a previous visit */
+    const iTbody = document.querySelector('#card-indicators tbody');
+    Array.from(iTbody.querySelectorAll('tr'))
+      .sort((a, b) => +a.dataset.idx - +b.dataset.idx)
+      .forEach(r => { r.classList.remove('struck'); iTbody.appendChild(r); });
+    const iWrap = document.querySelector('#card-indicators .ctbl2-wrap');
+    iWrap.style.transition = '';
+    iWrap.style.opacity    = '';
+
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    /* t = 300 ms → show card */
+    later(() => document.getElementById('card-indicators').classList.add('visible'), 300);
+
+    /* t = 3 300 ms → strike-through S2–S5 rows */
+    later(() => {
+      document.querySelectorAll('#card-indicators .row-strike').forEach(r => r.classList.add('struck'));
+    }, 3300);
+
+    /* t = 5 300 ms → fade out, sink struck rows to bottom, fade back in */
+    later(() => {
+      iWrap.style.transition = 'opacity 0.35s ease';
+      iWrap.style.opacity = '0';
+      later(() => {
+        const rows    = Array.from(iTbody.querySelectorAll('tr'));
+        const normal  = rows.filter(r => !r.classList.contains('row-strike'));
+        const crossed = rows.filter(r =>  r.classList.contains('row-strike'));
+        [...normal, ...crossed].forEach(r => iTbody.appendChild(r));
+        iWrap.style.opacity = '1';
+        later(() => { iWrap.style.transition = ''; }, 400);
+      }, 380);
+    }, 5300);
+  }
+
+  /* ── Step 8: scree plot image ── */
+  if (step === 8) {
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    later(() => document.getElementById('card-screeplot').classList.add('visible'), 300);
+  }
+
+  /* ── Step 9: factor loadings table ── */
+  if (step === 9) {
+    /* Restore original row order and clear any struck state from a previous visit */
+    const fTbody = document.querySelector('#card-factors tbody');
+    Array.from(fTbody.querySelectorAll('tr'))
+      .sort((a, b) => +a.dataset.idx - +b.dataset.idx)
+      .forEach(r => { r.classList.remove('struck'); fTbody.appendChild(r); });
+    const fWrap = document.querySelector('#card-factors .ctbl2-wrap');
+    fWrap.style.transition = '';
+    fWrap.style.opacity    = '';
+
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    /* t = 300 ms  → show card + badge */
+    later(() => {
+      document.getElementById('card-factors').classList.add('visible');
+      document.getElementById('iter-badge').classList.add('visible');
+    }, 300);
+
+    /* t = 3 300 ms → strike-through red rows (3 s after card appears) */
+    later(() => {
+      document.querySelectorAll('#card-factors .row-red').forEach(r => r.classList.add('struck'));
+    }, 3300);
+
+    /* t = 5 300 ms → fade out, re-sort (crossed rows sink to bottom), fade back in */
+    later(() => {
+      fWrap.style.transition = 'opacity 0.35s ease';
+      fWrap.style.opacity = '0';
+      later(() => {
+        const rows    = Array.from(fTbody.querySelectorAll('tr'));
+        const normal  = rows.filter(r => !r.classList.contains('row-red'));
+        const crossed = rows.filter(r =>  r.classList.contains('row-red'));
+        [...normal, ...crossed].forEach(r => fTbody.appendChild(r));
+        fWrap.style.opacity = '1';
+        later(() => { fWrap.style.transition = ''; }, 400);
+      }, 380);
+    }, 5300);
+  }
+
+  /* ── Step 10: factor loadings table iteration 2 ── */
+  if (step === 10) {
+    /* Restore original row order and clear any struck state from a previous visit */
+    const f2Tbody = document.querySelector('#card-factors2 tbody');
+    Array.from(f2Tbody.querySelectorAll('tr'))
+      .sort((a, b) => +a.dataset.idx - +b.dataset.idx)
+      .forEach(r => { r.classList.remove('struck'); f2Tbody.appendChild(r); });
+    const f2Wrap = document.querySelector('#card-factors2 .ctbl2-wrap');
+    f2Wrap.style.transition = '';
+    f2Wrap.style.opacity    = '';
+
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    /* t = 300 ms → show card + badge */
+    later(() => {
+      document.getElementById('card-factors2').classList.add('visible');
+      document.getElementById('iter-badge2').classList.add('visible');
+    }, 300);
+
+    /* t = 3 300 ms → strike-through red rows */
+    later(() => {
+      document.querySelectorAll('#card-factors2 .row-red').forEach(r => r.classList.add('struck'));
+    }, 3300);
+
+    /* t = 5 300 ms → fade out, sink struck rows to bottom, fade back in */
+    later(() => {
+      f2Wrap.style.transition = 'opacity 0.35s ease';
+      f2Wrap.style.opacity = '0';
+      later(() => {
+        const rows    = Array.from(f2Tbody.querySelectorAll('tr'));
+        const normal  = rows.filter(r => !r.classList.contains('row-red'));
+        const crossed = rows.filter(r =>  r.classList.contains('row-red'));
+        [...normal, ...crossed].forEach(r => f2Tbody.appendChild(r));
+        f2Wrap.style.opacity = '1';
+        later(() => { f2Wrap.style.transition = ''; }, 400);
+      }, 380);
+    }, 5300);
+  }
+
+  /* ── Step 11: factor loadings table iteration 3 ── */
+  if (step === 11) {
+    const f3Tbody = document.querySelector('#card-factors3 tbody');
+    Array.from(f3Tbody.querySelectorAll('tr'))
+      .sort((a, b) => +a.dataset.idx - +b.dataset.idx)
+      .forEach(r => { r.classList.remove('struck'); f3Tbody.appendChild(r); });
+    const f3Wrap = document.querySelector('#card-factors3 .ctbl2-wrap');
+    f3Wrap.style.transition = '';
+    f3Wrap.style.opacity    = '';
+
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    later(() => {
+      document.getElementById('card-factors3').classList.add('visible');
+      document.getElementById('iter-badge3').classList.add('visible');
+    }, 300);
+
+    later(() => {
+      document.querySelectorAll('#card-factors3 .row-red').forEach(r => r.classList.add('struck'));
+    }, 3300);
+
+    later(() => {
+      f3Wrap.style.transition = 'opacity 0.35s ease';
+      f3Wrap.style.opacity = '0';
+      later(() => {
+        const rows    = Array.from(f3Tbody.querySelectorAll('tr'));
+        const normal  = rows.filter(r => !r.classList.contains('row-red'));
+        const crossed = rows.filter(r =>  r.classList.contains('row-red'));
+        [...normal, ...crossed].forEach(r => f3Tbody.appendChild(r));
+        f3Wrap.style.opacity = '1';
+        later(() => { f3Wrap.style.transition = ''; }, 400);
+      }, 380);
+    }, 5300);
+  }
+
+  /* ── Step 12: factor loadings table iteration 4 (final, no cross-loaders) ── */
+  if (step === 12) {
+    const f4Tbody = document.querySelector('#card-factors4 tbody');
+    Array.from(f4Tbody.querySelectorAll('tr'))
+      .sort((a, b) => +a.dataset.idx - +b.dataset.idx)
+      .forEach(r => f4Tbody.appendChild(r));
+
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    later(() => {
+      document.getElementById('card-factors4').classList.add('visible');
+      document.getElementById('iter-badge4').classList.add('visible');
+    }, 300);
+  }
+
+  /* ── Step 13: grouped factor structure table ── */
+  if (step === 13) {
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    later(() => {
+      document.getElementById('card-factors5').classList.add('visible');
+      document.getElementById('result-badge').classList.add('visible');
+    }, 300);
+  }
+
+  /* ── Step 14: dendrogram ── */
+  if (step === 14) {
+    npCards.forEach(c => c.classList.remove('visible'));
+    npThreadNames.forEach(hideThread);
+    pipeCards.forEach(c => c.classList.remove('visible'));
+    pipeThreadNames.forEach(hideThread);
+    cardTodMethod.classList.remove('state-small', 'state-center');
+    cardTodMethod.style.cssText = '';
+
+    later(() => {
+      document.getElementById('card-dendro').classList.add('visible');
+      initDendroFV(); /* wires click handler + fullview once */
+    }, 300);
+  }
+
+  /* ════════════════════════════════════════════════════════
+     Future steps will be added here
+     ════════════════════════════════════════════════════════ */
+}
+
+/* ── Navigation ───────────────────────────────────────────── */
+document.getElementById('btn-next').addEventListener('click', () => applyStep(step + 1));
+document.getElementById('btn-prev').addEventListener('click', () => applyStep(step - 1));
+document.addEventListener('keydown', e => {
+  if (document.activeElement.tagName === 'BUTTON') document.activeElement.blur();
+  if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); applyStep(step + 1); }
+  if (e.key === 'ArrowLeft')                   { e.preventDefault(); applyStep(step - 1); }
+});
+
+/* ── Dendrogram fullview zoom + pan ───────────────────────── */
+(function () {
+  let sc = 1, tx = 0, ty = 0, minSc = 1;
+  let drag = false, sx = 0, sy = 0, stx = 0, sty = 0;
+  let fvDiv, wrap, img;
+
+  /* Change actual width/height (not CSS transform) so browser re-rasterises
+     at each zoom level — this preserves native image quality. */
+  function setT() {
+    img.style.width  = (img.naturalWidth  * sc) + 'px';
+    img.style.height = (img.naturalHeight * sc) + 'px';
+    img.style.left   = tx + 'px';
+    img.style.top    = ty + 'px';
+  }
+
+  function reset() {
+    const vw = window.innerWidth, vh = window.innerHeight;
+    sc = minSc = Math.min(vw / img.naturalWidth, vh / img.naturalHeight);
+    tx = (vw - img.naturalWidth  * sc) / 2;
+    ty = (vh - img.naturalHeight * sc) / 2;
+    setT();
+  }
+
+  function openFV() {
+    fvDiv.classList.add('open');
+    if (img.complete && img.naturalWidth) reset();
+    else img.addEventListener('load', reset, { once: true });
+  }
+
+  function closeFV() { fvDiv.classList.remove('open'); }
+
+  window.initDendroFV = function () {
+    if (window._dendroFVInit) return;
+    window._dendroFVInit = true;
+
+    fvDiv = document.getElementById('dendro-fullview');
+    wrap  = document.getElementById('dendro-fv-wrap');
+    img   = document.getElementById('dendro-fv-img');
+
+    document.getElementById('card-dendro').addEventListener('click', openFV);
+    document.getElementById('dendro-fv-close').addEventListener('click', closeFV);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeFV();
+    });
+
+    wrap.addEventListener('wheel', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      const f = e.deltaY < 0 ? 1.15 : 1 / 1.15;
+      const newSc = Math.max(minSc * 0.8, Math.min(16, sc * f));
+      /* zoom toward mouse cursor */
+      tx = e.clientX - (e.clientX - tx) * (newSc / sc);
+      ty = e.clientY - (e.clientY - ty) * (newSc / sc);
+      sc = newSc;
+      setT();
+    }, { passive: false });
+
+    wrap.addEventListener('mousedown', function (e) {
+      drag = true; sx = e.clientX; sy = e.clientY; stx = tx; sty = ty;
+      wrap.classList.add('dragging'); e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function (e) {
+      if (!drag) return;
+      tx = stx + e.clientX - sx;
+      ty = sty + e.clientY - sy;
+      setT();
+    });
+
+    document.addEventListener('mouseup', function () {
+      drag = false;
+      if (wrap) wrap.classList.remove('dragging');
+    });
+
+    wrap.addEventListener('dblclick', reset);
+  };
+}());
+
+/* ── Boot ─────────────────────────────────────────────────── */
+applyStep(0);
+</script>
+<!-- ── Dendrogram fullview: outside #stage so position:fixed is truly viewport-fixed ── -->
+<div id="dendro-fullview">
+  <div id="dendro-fv-wrap">
+    <img id="dendro-fv-img" src="https://i.postimg.cc/Y0xFNp48/Milan-Dendrogram-7-Clusters-Fixed.png" alt="Dendrogram — 7 clusters">
+  </div>
+  <button id="dendro-fv-close">✕ Close</button>
+  <div id="dendro-fv-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
+</div>
+</body>
+</html>
