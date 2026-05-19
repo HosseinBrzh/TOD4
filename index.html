@@ -608,62 +608,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'DM Sans'
   padding: 7px 10px;
 }
 #card-factors5 .ctbl2 tbody tr.row-group-start td { border-top: 1.5px solid rgba(196,146,42,0.28); }
-/* ── Step 14: zoom-and-pan dendrogram card ── */
-#card-dendro {
-  width: 880px; height: 500px;
-  left: 60px; top: 68px;
-  background: rgba(255,255,255,0.52);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  border: 0.5px solid rgba(255,255,255,0.60);
-  border-left: 5px solid #C4922A;
-  padding: 0; overflow: hidden;
-  opacity: 0; transform: scale(0.88) translateY(10px);
-  z-index: 8; pointer-events: none;
-  transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.34,1.56,0.64,1);
-}
-#card-dendro.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
-#card-dendro { cursor: pointer; }
-#card-dendro img { width: 100%; height: 100%; object-fit: contain; display: block; }
-#card-dendro .dendro-hint {
-  position: absolute; bottom: 8px; left: 0; right: 0;
-  text-align: center;
-  font-family: 'DM Sans', sans-serif; font-size: 10px;
-  color: rgba(100,100,100,0.55);
-  pointer-events: none; user-select: none;
-}
-
-/* ── Dendrogram fullview — OUTSIDE #stage so position:fixed works ── */
-#dendro-fullview {
-  display: none;
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,0.92);
-}
-#dendro-fullview.open { display: block; }
-#dendro-fv-wrap {
-  position: absolute; inset: 0;
-  overflow: hidden; cursor: grab;
-}
-#dendro-fv-wrap.dragging { cursor: grabbing; }
-#dendro-fv-wrap img {
-  position: absolute; top: 0; left: 0;
-  display: block;
-  user-select: none; -webkit-user-drag: none; pointer-events: none;
-}
-#dendro-fv-close {
-  position: fixed; top: 14px; right: 18px;
-  background: rgba(255,255,255,0.12); color: #fff;
-  border: 1px solid rgba(255,255,255,0.25); border-radius: 6px;
-  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600;
-  padding: 6px 18px; cursor: pointer; z-index: 10000;
-  transition: background 0.2s;
-}
-#dendro-fv-close:hover { background: rgba(255,255,255,0.25); }
-#dendro-fv-hint {
-  position: fixed; bottom: 12px; left: 0; right: 0; text-align: center;
-  font-family: 'DM Sans', sans-serif; font-size: 11px;
-  color: rgba(255,255,255,0.40);
-  pointer-events: none; user-select: none; z-index: 10000;
-}
 
 #result-badge {
   position: absolute; top: 56px; left: 800px;
@@ -1197,11 +1141,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'DM Sans'
       </div>
     </div>
 
-    <!-- ── Step 14: dendrogram preview (click to open fullview) ── -->
-    <div class="card" id="card-dendro">
-      <img src="https://i.postimg.cc/Y0xFNp48/Milan-Dendrogram-7-Clusters-Fixed.png" alt="Dendrogram — 7 clusters">
-      <div class="dendro-hint">Click to open full detail view</div>
-    </div>
 
     <!-- ── Image overlay (opened by clickable NP cards) ── -->
     <div id="img-overlay">
@@ -1359,7 +1298,7 @@ np4El.addEventListener('click', () => {
     2 steps → TOTAL = 1   (steps 0 and 1)
     etc.
 */
-const TOTAL = 14;
+const TOTAL = 13;
 let step = 0;
 
 function applyStep(s) {
@@ -1380,7 +1319,6 @@ function applyStep(s) {
   document.getElementById('iter-badge4').classList.remove('visible');
   document.getElementById('card-factors5').classList.remove('visible');
   document.getElementById('result-badge').classList.remove('visible');
-  document.getElementById('card-dendro').classList.remove('visible');
   const prevStep = step;
   step = Math.max(0, Math.min(TOTAL, s));
   document.getElementById('step-info').textContent = `Step ${step} of ${TOTAL}`;
@@ -1821,22 +1759,7 @@ function applyStep(s) {
     }, 300);
   }
 
-  /* ── Step 14: dendrogram ── */
-  if (step === 14) {
-    npCards.forEach(c => c.classList.remove('visible'));
-    npThreadNames.forEach(hideThread);
-    pipeCards.forEach(c => c.classList.remove('visible'));
-    pipeThreadNames.forEach(hideThread);
-    cardTodMethod.classList.remove('state-small', 'state-center');
-    cardTodMethod.style.cssText = '';
-
-    later(() => {
-      document.getElementById('card-dendro').classList.add('visible');
-      initDendroFV(); /* wires click handler + fullview once */
-    }, 300);
-  }
-
-  /* ════════════════════════════════════════════════════════
+/* ════════════════════════════════════════════════════════
      Future steps will be added here
      ════════════════════════════════════════════════════════ */
 }
@@ -1850,93 +1773,9 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft')                   { e.preventDefault(); applyStep(step - 1); }
 });
 
-/* ── Dendrogram fullview zoom + pan ───────────────────────── */
-(function () {
-  let sc = 1, tx = 0, ty = 0, minSc = 1;
-  let drag = false, sx = 0, sy = 0, stx = 0, sty = 0;
-  let fvDiv, wrap, img;
-
-  /* Change actual width/height (not CSS transform) so browser re-rasterises
-     at each zoom level — this preserves native image quality. */
-  function setT() {
-    img.style.width  = (img.naturalWidth  * sc) + 'px';
-    img.style.height = (img.naturalHeight * sc) + 'px';
-    img.style.left   = tx + 'px';
-    img.style.top    = ty + 'px';
-  }
-
-  function reset() {
-    const vw = window.innerWidth, vh = window.innerHeight;
-    sc = minSc = Math.min(vw / img.naturalWidth, vh / img.naturalHeight);
-    tx = (vw - img.naturalWidth  * sc) / 2;
-    ty = (vh - img.naturalHeight * sc) / 2;
-    setT();
-  }
-
-  function openFV() {
-    fvDiv.classList.add('open');
-    if (img.complete && img.naturalWidth) reset();
-    else img.addEventListener('load', reset, { once: true });
-  }
-
-  function closeFV() { fvDiv.classList.remove('open'); }
-
-  window.initDendroFV = function () {
-    if (window._dendroFVInit) return;
-    window._dendroFVInit = true;
-
-    fvDiv = document.getElementById('dendro-fullview');
-    wrap  = document.getElementById('dendro-fv-wrap');
-    img   = document.getElementById('dendro-fv-img');
-
-    document.getElementById('card-dendro').addEventListener('click', openFV);
-    document.getElementById('dendro-fv-close').addEventListener('click', closeFV);
-    document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape') closeFV();
-    });
-
-    wrap.addEventListener('wheel', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      const f = e.deltaY < 0 ? 1.15 : 1 / 1.15;
-      const newSc = Math.max(minSc * 0.8, Math.min(16, sc * f));
-      /* zoom toward mouse cursor */
-      tx = e.clientX - (e.clientX - tx) * (newSc / sc);
-      ty = e.clientY - (e.clientY - ty) * (newSc / sc);
-      sc = newSc;
-      setT();
-    }, { passive: false });
-
-    wrap.addEventListener('mousedown', function (e) {
-      drag = true; sx = e.clientX; sy = e.clientY; stx = tx; sty = ty;
-      wrap.classList.add('dragging'); e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', function (e) {
-      if (!drag) return;
-      tx = stx + e.clientX - sx;
-      ty = sty + e.clientY - sy;
-      setT();
-    });
-
-    document.addEventListener('mouseup', function () {
-      drag = false;
-      if (wrap) wrap.classList.remove('dragging');
-    });
-
-    wrap.addEventListener('dblclick', reset);
-  };
-}());
 
 /* ── Boot ─────────────────────────────────────────────────── */
 applyStep(0);
 </script>
-<!-- ── Dendrogram fullview: outside #stage so position:fixed is truly viewport-fixed ── -->
-<div id="dendro-fullview">
-  <div id="dendro-fv-wrap">
-    <img id="dendro-fv-img" src="https://i.postimg.cc/Y0xFNp48/Milan-Dendrogram-7-Clusters-Fixed.png" alt="Dendrogram — 7 clusters">
-  </div>
-  <button id="dendro-fv-close">✕ Close</button>
-  <div id="dendro-fv-hint">Scroll to zoom &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Double-click to reset</div>
-</div>
 </body>
 </html>
